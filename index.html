@@ -22,6 +22,8 @@
   .table-wrap {
     width: 100%;
     overflow-x: auto;
+    overflow-y: auto;
+    max-height: 80vh;
     -webkit-overflow-scrolling: touch;
     border-radius: 14px;
     background: #1a1a24;
@@ -67,6 +69,9 @@
     padding: 8px 6px;
   }
   th:first-child { background: #12121a; z-index: 4; }
+  /* 縞模様（偶数行） */
+  tbody tr:nth-child(even) td { background: #16161f; }
+  tbody tr:nth-child(even) td:first-child { background: #16161f; }
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: #1e1e2e; }
   tr:hover td:first-child { background: #1e1e2e; }
@@ -222,9 +227,9 @@
   }
   .antutu-fill.top { background: linear-gradient(90deg, #4ade80, #22c55e); }
 
-  /* 現在の端末 */
-  tr.current td { background: #1a1520; }
-  tr.current td:first-child { background: #1a1520; border-left: 3px solid #e67e22; }
+  /* 現在の端末（縞模様より優先） */
+  tr.current td, tbody tr.current:nth-child(even) td { background: #1a1520; }
+  tr.current td:first-child, tbody tr.current:nth-child(even) td:first-child { background: #1a1520; border-left: 3px solid #e67e22; }
   .current-badge {
     display: inline-block;
     font-size: 0.55rem;
