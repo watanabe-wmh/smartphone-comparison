@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>スマホ比較 2025-2026</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans JP', -apple-system, sans-serif;
+    background: #0f0f13;
+    color: #e0e0e0;
+    padding: 10px;
+    -webkit-text-size-adjust: 100%;
+  }
+  h1 {
+    font-size: 1.2rem;
+    text-align: center;
+    padding: 14px 0 10px;
+    color: #fff;
+  }
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 14px;
+    background: #1a1a24;
+    border: 1px solid #2a2a3a;
+  }
+  table {
+    width: 100%;
+    min-width: 1000px;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+  }
+  th, td {
+    padding: 10px 8px;
+    text-align: center;
+    border-bottom: 1px solid #222;
+    vertical-align: middle;
+  }
+  th {
+    background: #12121a;
+    color: #777;
+    font-weight: 600;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    white-space: nowrap;
+  }
+  /* 最左列固定 */
+  th:first-child, td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    background: #1a1a24;
+    text-align: center;
+    min-width: 110px;
+    padding: 8px 6px;
+  }
+  th:first-child { background: #12121a; z-index: 4; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #1e1e2e; }
+  tr:hover td:first-child { background: #1e1e2e; }
+
+  /* 機種名セル */
+  .device-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .device-cell img {
+    width: 56px;
+    height: 80px;
+    object-fit: contain;
+    border-radius: 6px;
+    background: #fff;
+    padding: 2px;
+  }
+  .device-cell .brand {
+    font-size: 0.55rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .device-cell .name {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.2;
+  }
+
+  /* 価格 */
+  .price {
+    font-weight: 700;
+    color: #6c5ce7;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+  .price-sub {
+    font-size: 0.6rem;
+    color: #666;
+    font-weight: 400;
+  }
+
+  /* ○× */
+  .ok { color: #4ade80; font-weight: 700; font-size: 1rem; }
+  .ng { color: #f87171; font-weight: 700; font-size: 1rem; }
+
+  /* カメラセル */
+  .cam-detail {
+    text-align: left;
+    font-size: 0.7rem;
+    line-height: 1.5;
+  }
+  .cam-detail span { color: #999; }
+
+  /* ズームバー */
+  .zoom-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+  .zoom-val { font-weight: 700; color: #fff; font-size: 0.85rem; }
+  .zoom-bar-mini {
+    width: 50px;
+    height: 4px;
+    background: #2a2a3a;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .zoom-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #6c5ce7, #a29bfe);
+  }
+
+  /* 購入リンク */
+  .buy-links {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    margin-top: 4px;
+    flex-wrap: wrap;
+  }
+  .buy-links a {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: opacity 0.2s;
+  }
+  .buy-links a:hover { opacity: 0.8; }
+  .buy-links .amazon { background: #ff9900; color: #111; }
+  .buy-links .official { background: #4285f4; color: #fff; }
+  .buy-links .kakaku { background: #e44d26; color: #fff; }
+
+  /* 備考 */
+  .note {
+    margin-top: 14px;
+    font-size: 0.65rem;
+    color: #555;
+    text-align: center;
+    line-height: 1.7;
+  }
+
+  /* フィルター */
+  .filter-bar {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 0 0 10px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .filter-bar button {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    border: 1px solid #333;
+    border-radius: 16px;
+    background: transparent;
+    color: #aaa;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-bar button.active {
+    background: #6c5ce7;
+    border-color: #6c5ce7;
+    color: #fff;
+  }
+
+  /* AnTuTu */
+  .antutu {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #f0c040;
+  }
+  .antutu.best { color: #4ade80; }
+  .antutu-bar {
+    width: 50px;
+    height: 4px;
+    background: #2a2a3a;
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 3px auto 0;
+  }
+  .antutu-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #f0c040, #e67e22);
+  }
+  .antutu-fill.top { background: linear-gradient(90deg, #4ade80, #22c55e); }
+
+  /* 現在の端末 */
+  tr.current td { background: #1a1520; }
+  tr.current td:first-child { background: #1a1520; border-left: 3px solid #e67e22; }
+  .current-badge {
+    display: inline-block;
+    font-size: 0.55rem;
+    background: #e67e22;
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 8px;
+    margin-top: 4px;
+  }
+
+  /* ハイライト行 */
+  tr.best-value td { border-left: 2px solid #4ade80; border-right: 2px solid #4ade80; }
+  tr.best-value td:first-child { border-left: 2px solid #4ade80; }
+  tr.best-value td:last-child { border-right: 2px solid #4ade80; }
+</style>
+</head>
+<body>
+
+<h1>スマホ比較 2025-2026</h1>
+
+<div class="filter-bar">
+  <button class="active" data-filter="all">すべて</button>
+  <button data-filter="felica">FeliCa対応のみ</button>
+  <button data-filter="under7">7万円以下</button>
+  <button data-filter="zoom5">光学5倍+</button>
+</div>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>機種</th>
+      <th>価格</th>
+      <th>SoC</th>
+      <th>画面</th>
+      <th>カメラ構成</th>
+      <th>光学ズーム</th>
+      <th>最大ズーム</th>
+      <th>FeliCa</th>
+      <th>eSIM</th>
+      <th>防水</th>
+      <th>電池</th>
+      <th>AnTuTu</th>
+      <th>RAM/ROM</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Pixel 6 (現在使用中) -->
+    <tr class="current" data-price="74800" data-felica="1" data-optical="0">
+      <td>
+        <div class="device-cell">
+          <img src="https://fdn2.gsmarena.com/vv/bigpic/google-pixel-6-new.jpg" alt="Pixel 6" loading="lazy">
+          <div class="brand">Google</div>
+          <div class="name">Pixel 6</div>
+          <span class="current-badge">NOW</span>
+        </div>
+      </td>
+      <td><div class="price" style="color:#888">¥74,800</div><div class="price-sub">8GB/128GB (2021)</div><div class="buy-links"><a href="https://kakaku.com/keitai/smartphone/model/M0000000917/" class="kakaku" target="_blank">価格.com</a></div></td>
+      <td>Google<br>Tensor (G1)</td>
+      <td>6.4"<br>AMOLED<br>90Hz</td>
+      <td class="cam-detail">
+        50MP <span>広角 GN1</span><br>
+        12MP <span>超広角</span><br>
+        <span style="color:#555">望遠なし</span>
+      </td>
+      <td>
+        <div class="zoom-cell">
+          <div class="zoom-val" style="color:#666">--</div>
+          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:0%"></div></div>
+        </div>
+      </td>
+      <td>
+        <div class="zoom-cell">
+          <div class="zoom-val">7x</div>
+          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:6%"></div></div>
+        </div>
+      </td>
+      <td class="ok">&#9679;</td>
+      <td class="ok">&#9679;</td>
+      <td>IP68</td>
+      <td>4,614<br>mAh</td>
+      <td><div class="antutu">約70万</div><div class="antutu-bar"><div class="antutu-fill" style="width:30%"></div></div></td>
+      <td>8GB<br>128-256GB</td>
+    </tr>
+
+    <!-- Nothing Phone 3a -->
+    <tr data-price="54800" data-felica="1" data-optical="2">
+      <td>
+        <div class="device-cell">
+          <img src="https://fdn2.gsmarena.com/vv/bigpic/nothing-phone-3a-new.jpg" alt="Nothing Phone 3a" loading="lazy">
+          <div class="brand">Nothing</div>
+          <div class="name">Phone (3a)</div>
+        </div>
+      </td>
+      <td><div class="price">¥54,800〜</div><div class="price-sub">8GB/128GB</div><div class="buy-links"><a href="https://www.amazon.co.jp/dp/B0DZ6245MD" class="amazon" target="_blank">Amazon</a><a href="https://kakaku.com/item/J0000047687/" class="kakaku" target="_blank">価格.com</a></div></td>
+      <td>Snapdragon<br>7s Gen 3</td>
+      <td>6.77"<br>AMOLED<br>120Hz</td>
+      <td class="cam-detail">
+        50MP <span>広角</span><br>
+        8MP <span>超広角</span><br>
+        50MP <span>2x望遠</span>
+      </td>
+      <td>
+        <div class="zoom-cell">
+          <div class="zoom-val">2x</div>
+          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:20%"></div></div>
+        </div>
+      </td>
+      <td>
+        <div class="zoom-cell">
+          <div class="zoom-val">10x</div>
+          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:8%"></div></div>
+        </div>
+      </td>
+      <td class="ok">&#9679;</td>
+      <td class="ok">&#9679;</td>
+      <td>IP64</td>
+      <td>5,000<br>mAh</td>
+      <td><div class="antutu">約78万</div><div class="antutu-bar"><div class="antutu-fill" style="width:34%"></div></div></td>
+      <td>8-12GB<br>128-256GB</td>
+    </tr>
+
+    <!-- Nothing Phone 3a Pro -->
+    <tr data-price="69800" data-felica="0" data-optical="3">
+      <td>
+        <div class="device-cell">
+          <img src="https://fdn2.gsmarena.com/vv/bigpic/nothing-phone-3a-pro-new.jpg" alt="Nothing Phone 3a Pro" loading="lazy">
+          <div class="brand">Nothing</div>
+          <div class="name">Phone (3a) Pro</div>
+        </div>
+      </td>
+      <td><div class="price">¥69,800〜</div><div class="price-sub">12GB/256GB</div><div class="buy-links"><a href="https://1shopmobile.com/ja/product/nothing-phone-3a-pro/" class="official" target="_blank">1ShopMobile</a></div></td>
+      <td>Snapdragon<br>7s Gen 3</td>
+      <td>6.8"<br>AMOLED<br>120Hz</td>
+      <td class="cam-detail">
+        50MP <span>広角</span><br>
+        8MP <span>超広角</span><br>
+        50MP <span>3xペリスコ</span>
+      </td>
+      <td>
+        <div class="zoom-cell">
+          <div class="zoom-val">3x</div>
+          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:30%"></div></div>
+        </div>
+      </td>
+      <td>
+        <div class="zoom-cell">
+          <div class="zoom-val">30x</div>
+          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:25%"></div></div>
+        </div>
+      </td>
+      <td class="ng">&#10005;</td>
+      <td class="ok">&#9679;</td>
+      <td>IP65</td>
+      <td>5,050<br>mAh</td>
+      <td><div class="antutu">約78万</div><div class="antutu-bar"><div class="antutu-fill" style="width:34%"></div></div></td>
+      <td>12GB<br>256GB</td>
+    </tr>
+
+    <!-- Xiaomi 13T -->
+    <tr data-price="55000" data-felica="1" data-optical="2">
+      <td>
+        <div class="device-cell">
+          <img src="https://fdn2.gsmarena.com/vv/bigpic/xiaomi-13t.jpg" alt="Xiaomi 13T" loading="lazy">
+          <div class="brand">Xiaomi</div>
+          <div class="name">13T</div>
+        </div>
+      </td>
+      <td><div class="price">¥55,000前後</div><div class="price-sub">8GB/256GB 市場価格</div><div class="buy-links"><a href="https://www.amazon.co.jp/dp/B0CM9K24X2" class="amazon" target="_blank">Amazon</a><a href="https://kakaku.com/item/J0000043226/" class="kakaku" target="_blank">価格.com</a></div></td>
+      <td>Dimensity<br>8200-Ultra</td>
+      <td>6.67"<br>AMOLED<br>144Hz</td>
+      <td class="cam-detail">
+        50MP <span>広角 IMX707</span><br>
+        12MP <span>超広角</span><br>
+        50MP <span>2x望遠</span>
+      </td>
+      <td>
+        <div class="zoom-cell">
+          <div class="zoom-val">2x</div>
+          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:20%"></div></div>
+        </div>
+      </td>
+      <td>
+        <div class="zoom-cell">
+          <div class="zoom-val">10x</div>
+          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:8%"></div></div>
+        </div>
+      </td>
+      <td class="ok">&#9679;</td>
+      <td class="ok">&#9679;</td>
+      <td>IP68</td>
+      <td>5,000<br>mAh</td>
+      <td><div class="antutu">約90万</div><div class="antutu-bar"><div class="antutu-fill" style="width:39%"></div></div></td>
+      <td>8GB<br>256GB</td>
+    </tr>
+
+    <!-- Xiaomi 15T -->
+    <tr data-price="64800" data-felica="0" data-optical="4">
+      <td>
+        <div class="device-cell">
+          <img src="https://fdn2.gsmarena.com/vv/bigpic/xiaomi-15t.jpg" alt="Xiaomi 15T" loading="lazy">
+          <div class="brand">Xiaomi</div>
+          <div class="name">15T</div>
+        </div>
+      </td>
+      <td><div class="price">¥64,800〜</div><div class="price-sub">12GB/256GB</div><div class="buy-links"><a href="https://www.mi.com/jp/product/xiaomi-15t/buy/" class="official" target="_blank">公式</a><a href="https://kakaku.com/keitai/smartphone/model/M0000001170/" class="kakaku" target="_blank">価格.com</a></div></td>
+      <td>Dimensity<br>8400-Ultra</td>
+      <td>6.67"<br>AMOLED<br>120Hz</td>
+      <td class="cam-detail">
+        50MP <span>Leica 広角</span><br>
+        12MP <span>超広角</span><br>
+        50MP <span>Leica 2x望遠</span>
+      </td>
+      <td>
+        <div class="zoom-cell">
+          <div class="zoom-val">4x</div>
+          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:40%"></div></div>
+        </div>
+      </td>
+      <td>
+        <div class="zoom-cell">
+          <div class="zoom-val">60x</div>
+          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:50%"></div></div>
+        </div>
+      </td>
+      <td class="ng">&#10005;</td>
+      <td class="ok">&#9679;</td>
+      <td>IP68</td>
+      <td>5,500<br>mAh</td>
+      <td><div class="antutu">約165万</div><div class="antutu-bar"><div class="antutu-fill" style="width:72%"></div></div></td>
+      <td>12GB<br>256GB</td>
+    </tr>
+
+    <!-- Xiaomi 15T Pro -->
+    <tr data-price="109800" data-felica="1" data-optical="5">
+      <td>
+        <div class="device-cell">
+          <img src="https://fdn2.gsmarena.com/vv/bigpic/xiaomi-15t-pro.jpg" alt="Xiaomi 15T Pro" loading="lazy">
+          <div class="brand">Xiaomi</div>
+          <div class="name">15T Pro</div>
+        </div>
+      </td>
+      <td><div class="price">¥109,800〜</div><div class="price-sub">12GB/512GB</div><div class="buy-links"><a href="https://www.amazon.co.jp/dp/B0FNM9463V" class="amazon" target="_blank">Amazon</a><a href="https://www.mi.com/jp/product/xiaomi-15t-pro/buy/" class="official" target="_blank">公式</a></div></td>
+      <td>Dimensity<br>9400+</td>
+      <td>6.83"<br>AMOLED<br>144Hz</td>
+      <td class="cam-detail">
+        50MP <span>Leica Summilux</span><br>
+        12MP <span>超広角</span><br>
+        50MP <span>5xペリスコ</span>
+      </td>
+      <td>
+        <div class="zoom-cell">
+          <div class="zoom-val">5x</div>
+          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:50%"></div></div>
+        </div>
+      </td>
+      <td>
+        <div class="zoom-cell">
+          <div class="zoom-val">120x</div>
+          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:100%"></div></div>
+        </div>
+      </td>
+      <td class="ok">&#9679;</td>
+      <td class="ok">&#9679;</td>
+      <td>IP68</td>
+      <td>5,500<br>mAh</td>
+      <td><div class="antutu best">約230万</div><div class="antutu-bar"><div class="antutu-fill top" style="width:100%"></div></div></td>
+      <td>12GB<br>512GB</td>
+    </tr>
+
+    <!-- Pixel 9a -->
+    <tr data-price="79900" data-felica="1" data-optical="0">
+      <td>
+        <div class="device-cell">
+          <img src="https://fdn2.gsmarena.com/vv/bigpic/google-pixel-9a.jpg" alt="Pixel 9a" loading="lazy">
+          <div class="brand">Google</div>
+          <div class="name">Pixel 9a</div>
+        </div>
+      </td>
+      <td><div class="price">¥79,900〜</div><div class="price-sub">8GB/128GB</div><div class="buy-links"><a href="https://www.amazon.co.jp/dp/B0F531S2TC" class="amazon" target="_blank">Amazon</a><a href="https://store.google.com/jp/config/pixel_9a?hl=ja" class="official" target="_blank">Google</a></div></td>
+      <td>Tensor G4</td>
+      <td>6.3"<br>OLED<br>120Hz</td>
+      <td class="cam-detail">
+        48MP <span>広角</span><br>
+        13MP <span>超広角</span><br>
+        <span style="color:#555">望遠なし</span>
+      </td>
+      <td>
+        <div class="zoom-cell">
+          <div class="zoom-val" style="color:#666">--</div>
+          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:0%"></div></div>
+        </div>
+      </td>
+      <td>
+        <div class="zoom-cell">
+          <div class="zoom-val">8x</div>
+          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:7%"></div></div>
+        </div>
+      </td>
+      <td class="ok">&#9679;</td>
+      <td class="ok">&#9679;</td>
+      <td>IP68</td>
+      <td>5,100<br>mAh</td>
+      <td><div class="antutu">約103万</div><div class="antutu-bar"><div class="antutu-fill" style="width:45%"></div></div></td>
+      <td>8GB<br>128-256GB</td>
+    </tr>
+
+  </tbody>
+</table>
+</div>
+
+<p class="note">
+  ※ 価格は2025-2026年時点のSIMフリー版参考価格<br>
+  ※ Nothing 3a Pro・Xiaomi 15T は日本版FeliCa非対応<br>
+  ※ Xiaomi 13Tは2023年発売モデル（市場在庫価格）<br>
+  ※ 画像出典: GSMArena
+</p>
+
+<script>
+document.querySelectorAll('.filter-bar button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-bar button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const filter = btn.dataset.filter;
+    document.querySelectorAll('tbody tr').forEach(row => {
+      const price = parseInt(row.dataset.price);
+      const felica = row.dataset.felica === '1';
+      const optical = parseInt(row.dataset.optical);
+      let show = true;
+      if (filter === 'felica') show = felica;
+      else if (filter === 'under7') show = price <= 70000;
+      else if (filter === 'zoom5') show = optical >= 5;
+      row.style.display = show ? '' : 'none';
+    });
+  });
+});
+</script>
+
+</body>
+</html>
