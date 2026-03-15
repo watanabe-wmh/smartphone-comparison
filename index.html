@@ -569,20 +569,44 @@
 </p>
 
 <script>
-// フィルター
+// フィルター（複数選択対応）
 document.querySelectorAll('.filter-bar button').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.filter-bar button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
     const filter = btn.dataset.filter;
+    if (filter === 'all') {
+      // 「すべて」を押したら他を全解除
+      document.querySelectorAll('.filter-bar button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    } else {
+      // 個別フィルターのトグル
+      btn.classList.toggle('active');
+      // 「すべて」を外す
+      document.querySelector('.filter-bar button[data-filter="all"]').classList.remove('active');
+      // 何も選択されていなければ「すべて」に戻す
+      const anyActive = document.querySelectorAll('.filter-bar button.active');
+      if (anyActive.length === 0) {
+        document.querySelector('.filter-bar button[data-filter="all"]').classList.add('active');
+      }
+    }
+
+    // アクティブなフィルターを収集
+    const activeFilters = Array.from(document.querySelectorAll('.filter-bar button.active'))
+      .map(b => b.dataset.filter);
+
     document.querySelectorAll('tbody tr').forEach(row => {
       const price = parseInt(row.dataset.price);
       const felica = row.dataset.felica === '1';
       const optical = parseInt(row.dataset.optical);
+
+      if (activeFilters.includes('all')) {
+        row.style.display = '';
+        return;
+      }
+      // すべての有効フィルターをAND条件で適用
       let show = true;
-      if (filter === 'felica') show = felica;
-      else if (filter === 'under7') show = price <= 70000;
-      else if (filter === 'zoom5') show = optical >= 5;
+      if (activeFilters.includes('felica') && !felica) show = false;
+      if (activeFilters.includes('under7') && price > 70000) show = false;
+      if (activeFilters.includes('zoom5') && optical < 5) show = false;
       row.style.display = show ? '' : 'none';
     });
   });
