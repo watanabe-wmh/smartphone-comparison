@@ -50,7 +50,12 @@
     top: 0;
     z-index: 2;
     white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s;
   }
+  th:hover { color: #a29bfe; }
+  th .sort-arrow { font-size: 0.7rem; margin-left: 2px; color: #6c5ce7; }
   /* 最左列固定 */
   th:first-child, td:first-child {
     position: sticky;
@@ -262,13 +267,14 @@
       <th>eSIM</th>
       <th>防水</th>
       <th>電池</th>
+      <th>重さ</th>
       <th>AnTuTu</th>
       <th>RAM/ROM</th>
     </tr>
   </thead>
   <tbody>
     <!-- Pixel 6 (現在使用中) -->
-    <tr class="current" data-price="74800" data-felica="1" data-optical="0">
+    <tr class="current" data-price="74800" data-felica="1" data-optical="0" data-weight="207">
       <td>
         <div class="device-cell">
           <img src="https://fdn2.gsmarena.com/vv/bigpic/google-pixel-6-new.jpg" alt="Pixel 6" loading="lazy">
@@ -301,12 +307,13 @@
       <td class="ok">&#9679;</td>
       <td>IP68</td>
       <td>4,614<br>mAh</td>
+      <td>207g</td>
       <td><div class="antutu">約70万</div><div class="antutu-bar"><div class="antutu-fill" style="width:30%"></div></div></td>
       <td>8GB<br>128-256GB</td>
     </tr>
 
     <!-- Nothing Phone 3a -->
-    <tr data-price="54800" data-felica="1" data-optical="2">
+    <tr data-price="54800" data-felica="1" data-optical="2" data-weight="201">
       <td>
         <div class="device-cell">
           <img src="https://fdn2.gsmarena.com/vv/bigpic/nothing-phone-3a-new.jpg" alt="Nothing Phone 3a" loading="lazy">
@@ -338,12 +345,13 @@
       <td class="ok">&#9679;</td>
       <td>IP64</td>
       <td>5,000<br>mAh</td>
+      <td>201g</td>
       <td><div class="antutu">約78万</div><div class="antutu-bar"><div class="antutu-fill" style="width:34%"></div></div></td>
       <td>8-12GB<br>128-256GB</td>
     </tr>
 
     <!-- Nothing Phone 3a Pro -->
-    <tr data-price="69800" data-felica="0" data-optical="3">
+    <tr data-price="69800" data-felica="0" data-optical="3" data-weight="211">
       <td>
         <div class="device-cell">
           <img src="https://fdn2.gsmarena.com/vv/bigpic/nothing-phone-3a-pro-new.jpg" alt="Nothing Phone 3a Pro" loading="lazy">
@@ -375,12 +383,13 @@
       <td class="ok">&#9679;</td>
       <td>IP65</td>
       <td>5,050<br>mAh</td>
+      <td>211g</td>
       <td><div class="antutu">約78万</div><div class="antutu-bar"><div class="antutu-fill" style="width:34%"></div></div></td>
       <td>12GB<br>256GB</td>
     </tr>
 
     <!-- Xiaomi 13T -->
-    <tr data-price="55000" data-felica="1" data-optical="2">
+    <tr data-price="55000" data-felica="1" data-optical="2" data-weight="197">
       <td>
         <div class="device-cell">
           <img src="https://fdn2.gsmarena.com/vv/bigpic/xiaomi-13t.jpg" alt="Xiaomi 13T" loading="lazy">
@@ -412,12 +421,13 @@
       <td class="ok">&#9679;</td>
       <td>IP68</td>
       <td>5,000<br>mAh</td>
+      <td>197g</td>
       <td><div class="antutu">約90万</div><div class="antutu-bar"><div class="antutu-fill" style="width:39%"></div></div></td>
       <td>8GB<br>256GB</td>
     </tr>
 
     <!-- Xiaomi 15T -->
-    <tr data-price="64800" data-felica="0" data-optical="4">
+    <tr data-price="64800" data-felica="0" data-optical="4" data-weight="194">
       <td>
         <div class="device-cell">
           <img src="https://fdn2.gsmarena.com/vv/bigpic/xiaomi-15t.jpg" alt="Xiaomi 15T" loading="lazy">
@@ -449,12 +459,13 @@
       <td class="ok">&#9679;</td>
       <td>IP68</td>
       <td>5,500<br>mAh</td>
+      <td>194g</td>
       <td><div class="antutu">約165万</div><div class="antutu-bar"><div class="antutu-fill" style="width:72%"></div></div></td>
       <td>12GB<br>256GB</td>
     </tr>
 
     <!-- Xiaomi 15T Pro -->
-    <tr data-price="109800" data-felica="1" data-optical="5">
+    <tr data-price="109800" data-felica="1" data-optical="5" data-weight="210">
       <td>
         <div class="device-cell">
           <img src="https://fdn2.gsmarena.com/vv/bigpic/xiaomi-15t-pro.jpg" alt="Xiaomi 15T Pro" loading="lazy">
@@ -486,12 +497,13 @@
       <td class="ok">&#9679;</td>
       <td>IP68</td>
       <td>5,500<br>mAh</td>
+      <td>210g</td>
       <td><div class="antutu best">約230万</div><div class="antutu-bar"><div class="antutu-fill top" style="width:100%"></div></div></td>
       <td>12GB<br>512GB</td>
     </tr>
 
     <!-- Pixel 9a -->
-    <tr data-price="79900" data-felica="1" data-optical="0">
+    <tr data-price="79900" data-felica="1" data-optical="0" data-weight="186">
       <td>
         <div class="device-cell">
           <img src="https://fdn2.gsmarena.com/vv/bigpic/google-pixel-9a.jpg" alt="Pixel 9a" loading="lazy">
@@ -523,6 +535,7 @@
       <td class="ok">&#9679;</td>
       <td>IP68</td>
       <td>5,100<br>mAh</td>
+      <td>186g</td>
       <td><div class="antutu">約103万</div><div class="antutu-bar"><div class="antutu-fill" style="width:45%"></div></div></td>
       <td>8GB<br>128-256GB</td>
     </tr>
@@ -539,6 +552,7 @@
 </p>
 
 <script>
+// フィルター
 document.querySelectorAll('.filter-bar button').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.filter-bar button').forEach(b => b.classList.remove('active'));
@@ -556,6 +570,60 @@ document.querySelectorAll('.filter-bar button').forEach(btn => {
     });
   });
 });
+
+// ソート
+(function() {
+  const table = document.querySelector('table');
+  const tbody = table.querySelector('tbody');
+  const headers = table.querySelectorAll('th');
+  let currentSort = { col: -1, asc: true };
+
+  // 各列のソートキー抽出関数
+  function getSortValue(row, colIndex) {
+    const cell = row.cells[colIndex];
+    const text = cell.textContent.trim();
+    // data属性ベースのソート
+    if (colIndex === 1) return parseInt(row.dataset.price) || 0; // 価格
+    if (colIndex === 5) return parseInt(row.dataset.optical) || 0; // 光学ズーム
+    if (colIndex === 10) return parseInt(row.dataset.weight) || 0; // 重さ
+    // 数値抽出（AnTuTu、電池、ズーム等）
+    const num = text.replace(/[^0-9.]/g, '');
+    if (num && !isNaN(parseFloat(num))) return parseFloat(num);
+    // ○×ソート
+    if (text === '●') return 1;
+    if (text === '✕') return 0;
+    return text.toLowerCase();
+  }
+
+  headers.forEach((th, index) => {
+    th.addEventListener('click', () => {
+      const asc = currentSort.col === index ? !currentSort.asc : true;
+      currentSort = { col: index, asc };
+
+      // 矢印更新
+      headers.forEach(h => {
+        const arrow = h.querySelector('.sort-arrow');
+        if (arrow) arrow.remove();
+      });
+      const arrow = document.createElement('span');
+      arrow.className = 'sort-arrow';
+      arrow.textContent = asc ? ' ▲' : ' ▼';
+      th.appendChild(arrow);
+
+      // ソート実行
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      rows.sort((a, b) => {
+        const va = getSortValue(a, index);
+        const vb = getSortValue(b, index);
+        if (typeof va === 'number' && typeof vb === 'number') {
+          return asc ? va - vb : vb - va;
+        }
+        return asc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+      });
+      rows.forEach(row => tbody.appendChild(row));
+    });
+  });
+})();
 </script>
 
 </body>
