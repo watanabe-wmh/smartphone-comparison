@@ -69,12 +69,23 @@
     padding: 8px 6px;
   }
   th:first-child { background: #f0f0f5; z-index: 4; }
+  /* 価格列固定 */
+  th:nth-child(2), td:nth-child(2) {
+    position: sticky;
+    left: 110px;
+    z-index: 3;
+    background: #fff;
+    border-right: 1px solid #ddd;
+  }
+  th:nth-child(2) { background: #f0f0f5; z-index: 4; }
   /* 縞模様（偶数行） */
   tbody tr:nth-child(even) td { background: #f7f7fb; }
-  tbody tr:nth-child(even) td:first-child { background: #f7f7fb; }
+  tbody tr:nth-child(even) td:first-child,
+  tbody tr:nth-child(even) td:nth-child(2) { background: #f7f7fb; }
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: #eeeef5; }
-  tr:hover td:first-child { background: #eeeef5; }
+  tr:hover td:first-child,
+  tr:hover td:nth-child(2) { background: #eeeef5; }
 
   /* 機種名セル */
   .device-cell {
@@ -230,6 +241,7 @@
   /* 現在の端末（縞模様より優先） */
   tr.current td, tbody tr.current:nth-child(even) td { background: #fff5eb; }
   tr.current td:first-child, tbody tr.current:nth-child(even) td:first-child { background: #fff5eb; border-left: 3px solid #e67e22; }
+  tr.current td:nth-child(2), tbody tr.current:nth-child(even) td:nth-child(2) { background: #fff5eb; }
   .current-badge {
     display: inline-block;
     font-size: 0.55rem;
