@@ -75,7 +75,8 @@
   .sheet-head{padding:2px 14px 8px;display:flex;align-items:center;gap:10px}
   .count{font-size:.92rem;font-weight:800}
   .count b{color:var(--accent)}
-  .sort{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:.78rem;color:var(--sub)}
+  .sort{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:.78rem;color:var(--sub);white-space:nowrap}
+  @media (max-width:359px){.sortlbl{display:none}}
   .sort select{border:1px solid var(--line);border-radius:14px;padding:5px 8px;font-size:.78rem;background:#fff;color:var(--ink)}
   .areaToggle{font-size:.74rem;font-weight:700;padding:6px 10px;border-radius:16px;border:1px solid var(--line);background:#fff;color:var(--sub);white-space:nowrap}
   .areaToggle.on{background:var(--accent);color:#fff;border-color:var(--accent)}
@@ -173,7 +174,7 @@
   <div class="sheet-head">
     <div class="count"><b id="num">0</b> 件</div>
     <button class="areaToggle" id="areaToggle" aria-pressed="false">📍この範囲</button>
-    <div class="sort">並び替え
+    <div class="sort"><span class="sortlbl">並び替え</span>
       <select id="sort">
         <option value="rating">評価が高い</option>
         <option value="reviews">口コミが多い</option>
