@@ -72,6 +72,31 @@ def award_flags(award):
     return has_hyaku, has_award
 
 
+DAYS = "月火水木金土日"  # index 0=月 .. 6=日
+
+
+def open_days(hours, holiday):
+    """営業時間と定休日から「営業している曜日」を [月..日] の 0/1 配列で推定する。
+
+    営業時間は「<営業曜日> 11:30 - 23:00 ... <定休曜日>」の形式が多く、
+    最初の時刻より前に並ぶ曜日を営業日とみなす。曜日表記が無い店は
+    全曜日営業とみなし、定休日フィールドにある曜日は閉店として除外する。
+    判定材料が無い店は全曜日営業（ベストエフォート）。
+    """
+    open_set = set(range(7))  # 既定は全曜日営業
+    if any(c in DAYS for c in hours):
+        m = re.search(r"\d{1,2}:\d{2}", hours)
+        lead = hours[:m.start()] if m else hours
+        lead_days = {DAYS.index(c) for c in lead if c in DAYS}
+        if lead_days:
+            open_set = lead_days
+    # 定休日に明記された曜日を除外
+    for c in holiday:
+        if c in DAYS:
+            open_set.discard(DAYS.index(c))
+    return [1 if i in open_set else 0 for i in range(7)]
+
+
 def main():
     with open(SRC, "rb") as fh:
         raw = fh.read()
@@ -117,6 +142,7 @@ def main():
             "phone": r["phone"],
             "hours": r["hours"],
             "holiday": r["holiday"],
+            "openDays": open_days(r["hours"], r["holiday"]),
             "seats": r["seats"],
             "privateRoom": r["privateRoom"].startswith("有"),
             "smoking": r["smoking"],
