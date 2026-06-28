@@ -177,9 +177,10 @@
   <div class="grip" id="grip"><span></span></div>
   <div class="sheet-head">
     <div class="count"><b id="num">0</b> 件</div>
-    <button class="areaToggle" id="areaToggle" aria-pressed="false">📍この範囲</button>
+    <button class="areaToggle on" id="areaToggle" aria-pressed="true">📍この範囲</button>
     <div class="sort"><span class="sortlbl">並び替え</span>
       <select id="sort">
+        <option value="center">地図の中央から近い</option>
         <option value="rating">評価が高い</option>
         <option value="reviews">口コミが多い</option>
         <option value="saves">保存が多い</option>
@@ -339,7 +340,7 @@ function cardHtml(d){
       <div class="badges">${badges.join('')}</div>
     </div></div>`;
 }
-let boundsOnly=false, view=[];
+let boundsOnly=true, view=[];   // 既定で「この範囲」ON
 function inView(d){return map.getBounds().contains([d.lat,d.lng]);}
 function renderList(){
   view = boundsOnly ? filtered.filter(inView) : filtered;
@@ -365,7 +366,11 @@ areaToggle.onclick=()=>{
   areaToggle.setAttribute('aria-pressed',boundsOnly);
   refreshList(true);
 };
-map.on('moveend',()=>{ if(boundsOnly) refreshList(true); });
+map.on('moveend',()=>{
+  const by=document.getElementById('sort').value;
+  if(by==='center') sortList();            // 中央が動いたら距離順を取り直す
+  if(boundsOnly || by==='center') refreshList(true);
+});
 listEl.addEventListener('click',e=>{
   const c=e.target.closest('.card'); if(!c)return;
   const d=DATA[+c.dataset.id]; focusStore(d);
@@ -419,7 +424,12 @@ function applyFilters(){
 }
 function sortList(){
   const by=document.getElementById('sort').value;
+  let cc=null;
+  if(by==='center'){ const c=map.getCenter(); cc=[c.lat,c.lng]; }
   filtered.sort((a,b)=>{
+    if(by==='center'){
+      return haversine(cc[0],cc[1],a.lat,a.lng)-haversine(cc[0],cc[1],b.lat,b.lng);
+    }
     if(by==='dist'&&userLatLng){
       return haversine(userLatLng[0],userLatLng[1],a.lat,a.lng)-haversine(userLatLng[0],userLatLng[1],b.lat,b.lng);
     }
