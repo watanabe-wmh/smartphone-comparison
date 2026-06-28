@@ -75,7 +75,8 @@
   .sheet-head{padding:2px 14px 8px;display:flex;align-items:center;gap:10px}
   .count{font-size:.92rem;font-weight:800}
   .count b{color:var(--accent)}
-  .sort{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:.78rem;color:var(--sub)}
+  .sort{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:.78rem;color:var(--sub);white-space:nowrap}
+  @media (max-width:359px){.sortlbl{display:none}}
   .sort select{border:1px solid var(--line);border-radius:14px;padding:5px 8px;font-size:.78rem;background:#fff;color:var(--ink)}
   .areaToggle{font-size:.74rem;font-weight:700;padding:6px 10px;border-radius:16px;border:1px solid var(--line);background:#fff;color:var(--sub);white-space:nowrap}
   .areaToggle.on{background:var(--accent);color:#fff;border-color:var(--accent)}
@@ -113,6 +114,10 @@
   .panel-body{overflow-y:auto;padding:14px 16px;flex:1}
   .fgroup{margin-bottom:18px}
   .fgroup>label{display:block;font-size:.82rem;font-weight:800;margin-bottom:9px}
+  .fgroup .hint{font-size:.68rem;font-weight:600;color:var(--sub);margin-left:4px}
+  .range2{display:flex;align-items:center;gap:8px}
+  .range2 .tilde{color:var(--sub);font-weight:700}
+  #dayChips .chip{min-width:38px;text-align:center;padding:7px 0}
   .chips{display:flex;flex-wrap:wrap;gap:7px}
   .chip{
     font-size:.8rem;padding:7px 12px;border-radius:18px;border:1px solid var(--line);
@@ -173,7 +178,7 @@
   <div class="sheet-head">
     <div class="count"><b id="num">0</b> 件</div>
     <button class="areaToggle" id="areaToggle" aria-pressed="false">📍この範囲</button>
-    <div class="sort">並び替え
+    <div class="sort"><span class="sortlbl">並び替え</span>
       <select id="sort">
         <option value="rating">評価が高い</option>
         <option value="reviews">口コミが多い</option>
@@ -192,16 +197,24 @@
     <div class="panel-head"><h2>絞り込み</h2><button class="x" data-close>&times;</button></div>
     <div class="panel-body">
       <div class="fgroup">
-        <label>ジャンル</label>
+        <label>ジャンル <span class="hint">複数選択できます</span></label>
         <div class="chips" id="genreChips"></div>
+      </div>
+      <div class="fgroup">
+        <label>営業曜日 <span class="hint">その日に営業（定休日でない）店</span></label>
+        <div class="chips" id="dayChips"></div>
       </div>
       <div class="fgroup">
         <label>最寄駅</label>
         <select class="full" id="stationSel"><option value="">すべての駅</option></select>
       </div>
       <div class="fgroup">
-        <label>予算（夜・ひとり）</label>
-        <div class="chips" id="budgetChips"></div>
+        <label>ディナー予算（ひとり）</label>
+        <div class="range2">
+          <select class="full" id="budgetMinSel"></select>
+          <span class="tilde">〜</span>
+          <select class="full" id="budgetMaxSel"></select>
+        </div>
       </div>
       <div class="fgroup">
         <label>評価</label>
@@ -247,12 +260,14 @@ function bucketOf(g){
   for(const [name,re] of GENRE_BUCKETS) if(re.test(g)) return name;
   return 'その他';
 }
-const BUDGETS=[['指定なし',null],['〜1,000円',1000],['〜2,000円',2000],['〜4,000円',4000],['〜6,000円',6000],['〜10,000円',10000],['〜20,000円',20000]];
+// ディナー予算の選択肢（円）。下限/上限プルダウンで共用
+const BUDGET_STEPS=[1000,2000,3000,4000,5000,6000,8000,10000,15000,20000,30000];
 const RATINGS=[['すべて',0],['★4.0+',4.0],['★3.8+',3.8],['★3.6+',3.6]];
 const TOGGLES=[['award','受賞店'],['privateRoom','個室あり'],['reservation','予約可'],['nosmoke','禁煙']];
+const DAYNAMES=['月','火','水','木','金','土','日'];
 
-// filter state
-const F={genre:new Set(),station:'',budget:null,rating:0,toggles:new Set(),q:''};
+// filter state（budgetMin/Max=選択した下限・上限。daysは営業日として要求する曜日index）
+const F={genre:new Set(),days:new Set(),station:'',bmin:null,bmax:null,rating:0,toggles:new Set(),q:''};
 
 // ---------- map ----------
 const map=L.map('map',{zoomControl:false,attributionControl:true}).setView(CENTER,ZOOM);
@@ -367,8 +382,13 @@ function applyFilters(){
   const q=F.q.trim();
   filtered=DATA.filter(d=>{
     if(F.genre.size && !F.genre.has(d._bucket))return false;
+    if(F.days.size){ for(const day of F.days){ if(!d.openDays || !d.openDays[day])return false; } }
     if(F.station && d.station!==F.station)return false;
-    if(F.budget!=null){ if(d.budgetMin==null || d.budgetMin>F.budget)return false; }
+    if(F.bmin!=null || F.bmax!=null){
+      if(d.budgetMin==null && d.budgetMax==null)return false;        // 予算不明は除外
+      if(F.bmin!=null && d.budgetMax!=null && d.budgetMax<F.bmin)return false;
+      if(F.bmax!=null && d.budgetMin!=null && d.budgetMin>F.bmax)return false;
+    }
     if(F.rating && (d.rating||0)<F.rating)return false;
     for(const t of F.toggles){
       if(t==='award' && !(d.hyakumeiten||d.tabelogAward))return false;
@@ -387,7 +407,7 @@ function applyFilters(){
   cluster.addLayers(ms);
   // filter badge
   const fc=document.getElementById('fcount');
-  const active=F.genre.size+(F.station?1:0)+(F.budget!=null?1:0)+(F.rating?1:0)+F.toggles.size;
+  const active=F.genre.size+F.days.size+(F.station?1:0)+((F.bmin!=null||F.bmax!=null)?1:0)+(F.rating?1:0)+F.toggles.size;
   fc.hidden=!active; fc.textContent=active;
   refreshList(true);
 }
@@ -434,9 +454,21 @@ function buildFilterUI(){
     const o=document.createElement('option');o.value=s;o.textContent=`${s}（${stc[s]}）`;ss.appendChild(o);
   });
   ss.onchange=e=>F.station=e.target.value;
-  // budget
-  const bc=document.getElementById('budgetChips');
-  BUDGETS.forEach(([l,v])=>{const b=chip(l,v===null,()=>{F.budget=v;bc.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));b.classList.add('on');});bc.appendChild(b);});
+  // 営業曜日（複数選択＝選んだ曜日すべてに営業している店）
+  const dc=document.getElementById('dayChips');
+  DAYNAMES.forEach((nm,i)=>{
+    const b=chip(nm,false,()=>{F.days.has(i)?F.days.delete(i):F.days.add(i);b.classList.toggle('on');});
+    dc.appendChild(b);
+  });
+  // ディナー予算（下限〜上限）
+  const yen=v=>'¥'+v.toLocaleString();
+  const minSel=document.getElementById('budgetMinSel'),maxSel=document.getElementById('budgetMaxSel');
+  minSel.appendChild(new Option('下限なし',''));
+  BUDGET_STEPS.forEach(v=>minSel.appendChild(new Option(yen(v)+'〜',v)));
+  maxSel.appendChild(new Option('上限なし',''));
+  BUDGET_STEPS.forEach(v=>maxSel.appendChild(new Option('〜'+yen(v),v)));
+  minSel.onchange=e=>{F.bmin=e.target.value?+e.target.value:null;};
+  maxSel.onchange=e=>{F.bmax=e.target.value?+e.target.value:null;};
   // rating
   const rc=document.getElementById('ratingChips');
   RATINGS.forEach(([l,v])=>{const b=chip(l,v===0,()=>{F.rating=v;rc.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));b.classList.add('on');});rc.appendChild(b);});
@@ -445,11 +477,12 @@ function buildFilterUI(){
   TOGGLES.forEach(([k,l])=>{const b=chip(l,false,()=>{F.toggles.has(k)?F.toggles.delete(k):F.toggles.add(k);b.classList.toggle('on');});tc.appendChild(b);});
 }
 document.getElementById('resetF').onclick=()=>{
-  F.genre.clear();F.station='';F.budget=null;F.rating=0;F.toggles.clear();
+  F.genre.clear();F.days.clear();F.station='';F.bmin=null;F.bmax=null;F.rating=0;F.toggles.clear();
   document.querySelectorAll('#filter .chip').forEach(c=>c.classList.remove('on'));
-  document.querySelectorAll('#budgetChips .chip')[0].classList.add('on');
   document.querySelectorAll('#ratingChips .chip')[0].classList.add('on');
   document.getElementById('stationSel').value='';
+  document.getElementById('budgetMinSel').value='';
+  document.getElementById('budgetMaxSel').value='';
 };
 
 // ---------- bottom sheet drag ----------
