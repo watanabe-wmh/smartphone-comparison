@@ -19,7 +19,7 @@ import os
 import re
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.join(BASE, "data", "tabelog_hatsudai_SC_full.csv")
+SRC = os.path.join(BASE, "data", "tabelog_master_3.4plus.csv")
 OUT = os.path.join(BASE, "data", "restaurants.json")
 
 # データ行の列順（ヘッダ行は別エンコードのため使わず固定定義する）
@@ -28,7 +28,7 @@ COLUMNS = [
     "budgetNight", "budgetDay", "url", "address", "postal",
     "lat", "lng", "phone", "hours", "holiday", "seats",
     "privateRoom", "smoking", "reservation", "award", "parking",
-    "access", "photo",
+    "access", "photo", "category",
 ]
 
 
@@ -152,6 +152,7 @@ def main():
             "tabelogAward": award,
             "access": r["access"],
             "photo": r["photo"],
+            "category": r.get("category", ""),
         })
 
     # 評価の高い順で並べておく（初期表示・リストのデフォルト）
