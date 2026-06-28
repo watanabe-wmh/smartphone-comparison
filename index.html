@@ -2,678 +2,490 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>スマホ比較 2025-2026</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#d6452f">
+<title>初台グルメマップ｜渋谷・新宿の食べログ上位1200店</title>
+<meta name="description" content="初台・渋谷・新宿エリアの食べログ評価上位1200店をスマホで探せるグルメマップ。ジャンル・予算・評価・現在地から絞り込み。">
+
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="vendor/MarkerCluster.css">
+<link rel="stylesheet" href="vendor/MarkerCluster.Default.css">
+
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'Noto Sans JP', -apple-system, sans-serif;
-    background: #f5f5f8;
-    color: #333;
-    padding: 10px;
-    -webkit-text-size-adjust: 100%;
+  :root{
+    --accent:#d6452f; --accent-d:#b5371f;
+    --bg:#f6f6f4; --card:#fff; --ink:#222; --sub:#777; --line:#e7e7e3;
+    --gold:#e8a200; --safe-b:env(safe-area-inset-bottom,0px);
   }
-  h1 {
-    font-size: 1.2rem;
-    text-align: center;
-    padding: 14px 0 10px;
-    color: #222;
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:'Hiragino Kaku Gothic ProN','Noto Sans JP',-apple-system,BlinkMacSystemFont,sans-serif;
+    color:var(--ink);background:var(--bg);overflow:hidden;
+    -webkit-text-size-adjust:100%;
   }
-  .table-wrap {
-    width: 100%;
-    overflow-x: auto;
-    overflow-y: auto;
-    max-height: 80vh;
-    -webkit-overflow-scrolling: touch;
-    border-radius: 14px;
-    background: #fff;
-    border: 1px solid #ddd;
-  }
-  table {
-    width: 100%;
-    min-width: 1000px;
-    border-collapse: collapse;
-    font-size: 0.75rem;
-  }
-  th, td {
-    padding: 10px 8px;
-    text-align: center;
-    border-bottom: 1px solid #e0e0e0;
-    vertical-align: middle;
-  }
-  th {
-    background: #f0f0f5;
-    color: #666;
-    font-weight: 600;
-    font-size: 0.65rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    white-space: nowrap;
-    cursor: pointer;
-    user-select: none;
-    transition: color 0.2s;
-  }
-  th:hover { color: #5b4fcf; }
-  th .sort-arrow { font-size: 0.7rem; margin-left: 2px; color: #5b4fcf; }
-  /* 最左列固定 */
-  th:first-child, td:first-child {
-    position: sticky;
-    left: 0;
-    z-index: 3;
-    background: #fff;
-    text-align: center;
-    min-width: 110px;
-    padding: 8px 6px;
-  }
-  th:first-child { background: #f0f0f5; z-index: 4; }
-  /* 価格列固定 */
-  th:nth-child(2), td:nth-child(2) {
-    position: sticky;
-    left: 110px;
-    z-index: 3;
-    background: #fff;
-    border-right: 1px solid #ddd;
-  }
-  th:nth-child(2) { background: #f0f0f5; z-index: 4; }
-  /* 縞模様（偶数行） */
-  tbody tr:nth-child(even) td { background: #f7f7fb; }
-  tbody tr:nth-child(even) td:first-child,
-  tbody tr:nth-child(even) td:nth-child(2) { background: #f7f7fb; }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: #eeeef5; }
-  tr:hover td:first-child,
-  tr:hover td:nth-child(2) { background: #eeeef5; }
+  #map{position:fixed;inset:0;z-index:1}
+  .leaflet-popup-content{margin:0;width:230px!important}
+  .leaflet-popup-content-wrapper{border-radius:14px;overflow:hidden;padding:0}
+  .leaflet-popup-content p{margin:0}
 
-  /* 機種名セル */
-  .device-cell {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
+  /* ===== header ===== */
+  header{
+    position:fixed;top:0;left:0;right:0;z-index:1000;
+    padding:calc(env(safe-area-inset-top,0px) + 8px) 8px 8px;
+    background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,255,255,.82) 70%,rgba(255,255,255,0));
+    pointer-events:none;
   }
-  .device-cell img {
-    width: 56px;
-    height: 80px;
-    object-fit: contain;
-    border-radius: 6px;
-    background: #fff;
-    padding: 2px;
+  .bar{display:flex;gap:6px;align-items:center;pointer-events:auto}
+  .logo{font-weight:800;font-size:.86rem;color:var(--accent);white-space:nowrap;letter-spacing:0;flex:none}
+  .logo small{display:block;font-size:.56rem;color:var(--sub);font-weight:600}
+  .search{
+    flex:1;min-width:0;display:flex;align-items:center;gap:5px;background:#fff;border:1px solid var(--line);
+    border-radius:22px;padding:8px 10px;box-shadow:0 2px 10px rgba(0,0,0,.08);
   }
-  .device-cell .brand {
-    font-size: 0.55rem;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+  .search input{border:none;outline:none;flex:1;font-size:.88rem;background:transparent;min-width:0}
+  .search svg{flex:none;opacity:.5}
+  .fbtn{
+    flex:none;display:flex;align-items:center;gap:5px;background:var(--accent);color:#fff;border:none;
+    border-radius:22px;padding:9px 12px;font-size:.8rem;font-weight:700;box-shadow:0 2px 10px rgba(214,69,47,.35);white-space:nowrap;
   }
-  .device-cell .name {
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: #222;
-    line-height: 1.2;
-  }
+  .fbtn .dot{background:#fff;color:var(--accent);border-radius:10px;font-size:.68rem;padding:0 5px;font-weight:800}
 
-  /* 価格 */
-  .price {
-    font-weight: 700;
-    color: #5b4fcf;
-    font-size: 0.85rem;
-    white-space: nowrap;
+  /* ===== floating buttons ===== */
+  .fab{
+    position:fixed;right:12px;z-index:900;width:46px;height:46px;border-radius:50%;
+    background:#fff;border:1px solid var(--line);box-shadow:0 3px 12px rgba(0,0,0,.15);
+    display:flex;align-items:center;justify-content:center;
   }
-  .price-sub {
-    font-size: 0.6rem;
-    color: #888;
-    font-weight: 400;
-  }
+  #locBtn{bottom:calc(40vh + 14px + var(--safe-b))}
+  #locBtn.active{background:var(--accent);border-color:var(--accent)}
+  #locBtn.active svg{stroke:#fff}
 
-  /* ○× */
-  .ok { color: #16a34a; font-weight: 700; font-size: 1rem; }
-  .ng { color: #dc2626; font-weight: 700; font-size: 1rem; }
+  /* ===== bottom sheet ===== */
+  .sheet{
+    position:fixed;left:0;right:0;bottom:0;z-index:950;
+    height:40vh;background:var(--card);border-radius:18px 18px 0 0;
+    box-shadow:0 -4px 24px rgba(0,0,0,.16);display:flex;flex-direction:column;
+    transition:height .28s cubic-bezier(.4,0,.2,1);touch-action:none;
+  }
+  .sheet.expanded{height:88vh}
+  .sheet.collapsed{height:96px}
+  .grip{display:flex;justify-content:center;padding:8px 0 4px;cursor:grab}
+  .grip span{width:40px;height:4px;border-radius:3px;background:#d4d4cf}
+  .sheet-head{padding:2px 14px 8px;display:flex;align-items:center;gap:10px}
+  .count{font-size:.92rem;font-weight:800}
+  .count b{color:var(--accent)}
+  .sort{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:.78rem;color:var(--sub)}
+  .sort select{border:1px solid var(--line);border-radius:14px;padding:5px 8px;font-size:.78rem;background:#fff;color:var(--ink)}
+  .list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 10px calc(20px + var(--safe-b))}
 
-  /* カメラセル */
-  .cam-detail {
-    text-align: left;
-    font-size: 0.7rem;
-    line-height: 1.5;
+  .card{
+    display:flex;gap:10px;padding:10px;border-radius:14px;background:#fff;border:1px solid var(--line);
+    margin-bottom:9px;align-items:stretch;
   }
-  .cam-detail span { color: #888; }
+  .card:active{background:#fafaf8}
+  .thumb{width:84px;height:84px;border-radius:10px;object-fit:cover;flex:none;background:#eee}
+  .info{flex:1;min-width:0;display:flex;flex-direction:column}
+  .nm{font-size:.92rem;font-weight:700;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .meta{font-size:.72rem;color:var(--sub);margin-top:3px;display:flex;flex-wrap:wrap;gap:4px 8px}
+  .rate{display:inline-flex;align-items:center;gap:3px;font-weight:800;color:var(--gold)}
+  .rate .star{color:var(--gold)}
+  .badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:auto;padding-top:5px}
+  .badge{font-size:.62rem;font-weight:700;padding:2px 6px;border-radius:6px;background:#f0efe9;color:#6b6b63}
+  .badge.award{background:#fff4d6;color:#a8730a}
+  .badge.gen{background:#fbe9e5;color:var(--accent-d)}
+  .empty{text-align:center;color:var(--sub);padding:40px 20px;font-size:.85rem}
 
-  /* ズームバー */
-  .zoom-cell {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
+  /* ===== filter modal ===== */
+  .modal{position:fixed;inset:0;z-index:2000;display:none}
+  .modal.show{display:block}
+  .scrim{position:absolute;inset:0;background:rgba(0,0,0,.4)}
+  .panel{
+    position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:18px 18px 0 0;
+    max-height:90vh;display:flex;flex-direction:column;animation:up .25s ease;
   }
-  .zoom-val { font-weight: 700; color: #333; font-size: 0.85rem; }
-  .zoom-bar-mini {
-    width: 50px;
-    height: 4px;
-    background: #ddd;
-    border-radius: 2px;
-    overflow: hidden;
+  @keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .panel-head{display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}
+  .panel-head h2{font-size:1rem}
+  .panel-head .x{margin-left:auto;font-size:1.5rem;color:var(--sub);background:none;border:none;line-height:1}
+  .panel-body{overflow-y:auto;padding:14px 16px;flex:1}
+  .fgroup{margin-bottom:18px}
+  .fgroup>label{display:block;font-size:.82rem;font-weight:800;margin-bottom:9px}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{
+    font-size:.8rem;padding:7px 12px;border-radius:18px;border:1px solid var(--line);
+    background:#fff;color:var(--ink);font-weight:600;
   }
-  .zoom-bar-fill {
-    height: 100%;
-    border-radius: 2px;
-    background: linear-gradient(90deg, #5b4fcf, #8b7ff0);
-  }
+  .chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  select.full{width:100%;padding:11px;border:1px solid var(--line);border-radius:12px;font-size:.9rem;background:#fff}
+  .toggles{display:flex;flex-wrap:wrap;gap:7px}
+  .panel-foot{display:flex;gap:10px;padding:12px 16px calc(14px + var(--safe-b));border-top:1px solid var(--line)}
+  .panel-foot button{flex:1;padding:13px;border-radius:14px;font-size:.92rem;font-weight:800;border:none}
+  .btn-reset{background:#f0efe9;color:#555}
+  .btn-apply{background:var(--accent);color:#fff}
 
-  /* 購入リンク */
-  .buy-links {
-    display: flex;
-    gap: 4px;
-    justify-content: center;
-    margin-top: 4px;
-    flex-wrap: wrap;
+  /* popup card */
+  .pop{font-family:inherit}
+  .pop img{width:100%;height:120px;object-fit:cover;display:block;background:#eee}
+  .pop .pad{padding:9px 11px 11px}
+  .pop .pn{font-size:.92rem;font-weight:800;line-height:1.3}
+  .pop .pm{font-size:.72rem;color:var(--sub);margin:4px 0 8px;display:flex;flex-wrap:wrap;gap:3px 8px}
+  .pop .acts{display:flex;gap:6px}
+  .pop .acts a{
+    flex:1;text-align:center;font-size:.72rem;font-weight:700;text-decoration:none;
+    padding:8px 4px;border-radius:9px;color:#fff;
   }
-  .buy-links a {
-    font-size: 0.6rem;
-    padding: 2px 6px;
-    border-radius: 6px;
-    text-decoration: none;
-    font-weight: 600;
-    transition: opacity 0.2s;
-  }
-  .buy-links a:hover { opacity: 0.8; }
-  .buy-links .amazon { background: #ff9900; color: #111; }
-  .buy-links .official { background: #4285f4; color: #fff; }
-  .buy-links .kakaku { background: #e44d26; color: #fff; }
+  .a-tel{background:#2e9e5b}.a-tbl{background:var(--accent)}.a-map{background:#3a78d6}
+  .marker-pin{border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);width:100%;height:100%}
 
-  /* 備考 */
-  .note {
-    margin-top: 14px;
-    font-size: 0.65rem;
-    color: #888;
-    text-align: center;
-    line-height: 1.7;
+  @media (min-width:640px){
+    .sheet,.locBtn{max-width:420px}
+    .sheet{left:auto;right:0;height:100vh!important;border-radius:0;width:400px}
+    #map{right:400px}
+    .sheet.collapsed,.sheet.expanded{height:100vh!important}
+    #locBtn{bottom:24px;right:412px}
   }
-
-  /* フィルター */
-  .filter-bar {
-    display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    padding: 0 0 10px;
-    -webkit-overflow-scrolling: touch;
-  }
-  .filter-bar button {
-    flex-shrink: 0;
-    padding: 5px 12px;
-    border: 1px solid #ccc;
-    border-radius: 16px;
-    background: #fff;
-    color: #666;
-    font-size: 0.72rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .filter-bar button.active {
-    background: #5b4fcf;
-    border-color: #5b4fcf;
-    color: #fff;
-  }
-
-  /* AnTuTu */
-  .antutu {
-    font-weight: 700;
-    font-size: 0.85rem;
-    color: #b8860b;
-  }
-  .antutu.best { color: #16a34a; }
-  .antutu-bar {
-    width: 50px;
-    height: 4px;
-    background: #ddd;
-    border-radius: 2px;
-    overflow: hidden;
-    margin: 3px auto 0;
-  }
-  .antutu-fill {
-    height: 100%;
-    border-radius: 2px;
-    background: linear-gradient(90deg, #e6a817, #d97706);
-  }
-  .antutu-fill.top { background: linear-gradient(90deg, #16a34a, #15803d); }
-
-  /* 現在の端末（縞模様より優先） */
-  tr.current td, tbody tr.current:nth-child(even) td { background: #fff5eb; }
-  tr.current td:first-child, tbody tr.current:nth-child(even) td:first-child { background: #fff5eb; border-left: 3px solid #e67e22; }
-  tr.current td:nth-child(2), tbody tr.current:nth-child(even) td:nth-child(2) { background: #fff5eb; }
-  .current-badge {
-    display: inline-block;
-    font-size: 0.55rem;
-    background: #e67e22;
-    color: #fff;
-    padding: 1px 6px;
-    border-radius: 8px;
-    margin-top: 4px;
-  }
-
-  /* ハイライト行 */
-  tr.best-value td { border-left: 2px solid #16a34a; border-right: 2px solid #16a34a; }
-  tr.best-value td:first-child { border-left: 2px solid #16a34a; }
-  tr.best-value td:last-child { border-right: 2px solid #16a34a; }
 </style>
 </head>
 <body>
 
-<h1>スマホ比較 2025-2026</h1>
+<div id="map"></div>
 
-<div class="filter-bar">
-  <button class="active" data-filter="all">すべて</button>
-  <button data-filter="felica">FeliCa対応のみ</button>
-  <button data-filter="under7">7万円以下</button>
-  <button data-filter="zoom5">光学5倍+</button>
+<header>
+  <div class="bar">
+    <div class="logo">初台グルメ<small>食べログ上位1200店</small></div>
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+      <input id="q" type="search" placeholder="店名・ジャンルで検索" enterkeyhint="search">
+    </div>
+    <button class="fbtn" id="openFilter">絞込<span class="dot" id="fcount" hidden>0</span></button>
+  </div>
+</header>
+
+<button class="fab" id="locBtn" aria-label="現在地">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg>
+</button>
+
+<section class="sheet" id="sheet">
+  <div class="grip" id="grip"><span></span></div>
+  <div class="sheet-head">
+    <div class="count"><b id="num">0</b> 件</div>
+    <div class="sort">並び替え
+      <select id="sort">
+        <option value="rating">評価が高い</option>
+        <option value="reviews">口コミが多い</option>
+        <option value="saves">保存が多い</option>
+        <option value="dist">現在地から近い</option>
+      </select>
+    </div>
+  </div>
+  <div class="list" id="list"></div>
+</section>
+
+<!-- filter modal -->
+<div class="modal" id="filter">
+  <div class="scrim" data-close></div>
+  <div class="panel">
+    <div class="panel-head"><h2>絞り込み</h2><button class="x" data-close>&times;</button></div>
+    <div class="panel-body">
+      <div class="fgroup">
+        <label>ジャンル</label>
+        <div class="chips" id="genreChips"></div>
+      </div>
+      <div class="fgroup">
+        <label>最寄駅</label>
+        <select class="full" id="stationSel"><option value="">すべての駅</option></select>
+      </div>
+      <div class="fgroup">
+        <label>予算（夜・ひとり）</label>
+        <div class="chips" id="budgetChips"></div>
+      </div>
+      <div class="fgroup">
+        <label>評価</label>
+        <div class="chips" id="ratingChips"></div>
+      </div>
+      <div class="fgroup">
+        <label>こだわり</label>
+        <div class="toggles" id="toggleChips"></div>
+      </div>
+    </div>
+    <div class="panel-foot">
+      <button class="btn-reset" id="resetF">リセット</button>
+      <button class="btn-apply" data-close>この条件で見る</button>
+    </div>
+  </div>
 </div>
 
-<div class="table-wrap">
-<table>
-  <thead>
-    <tr>
-      <th>機種</th>
-      <th>価格</th>
-      <th>SoC</th>
-      <th>画面</th>
-      <th>カメラ構成</th>
-      <th>光学ズーム</th>
-      <th>最大ズーム</th>
-      <th>FeliCa</th>
-      <th>eSIM</th>
-      <th>防水</th>
-      <th>電池</th>
-      <th>重さ</th>
-      <th>サイズ</th>
-      <th>AnTuTu</th>
-      <th>RAM/ROM</th>
-    </tr>
-  </thead>
-  <tbody>
-    <!-- Pixel 6 (現在使用中) -->
-    <tr class="current" data-price="74800" data-felica="1" data-optical="0" data-weight="207">
-      <td>
-        <div class="device-cell">
-          <img src="https://fdn2.gsmarena.com/vv/bigpic/google-pixel-6.jpg" alt="Pixel 6" loading="lazy">
-          <div class="brand">Google</div>
-          <div class="name">Pixel 6</div>
-          <span class="current-badge">NOW</span>
-        </div>
-      </td>
-      <td><div class="price" style="color:#888">¥74,800</div><div class="price-sub">8GB/128GB (2021)</div><div class="buy-links"><a href="https://kakaku.com/keitai/smartphone/model/M0000000917/" class="kakaku" target="_blank">価格.com</a></div></td>
-      <td>Google<br>Tensor (G1)</td>
-      <td>6.4"<br>AMOLED<br>90Hz</td>
-      <td class="cam-detail">
-        50MP <span>広角 GN1</span><br>
-        12MP <span>超広角</span><br>
-        <span style="color:#555">望遠なし</span>
-      </td>
-      <td>
-        <div class="zoom-cell">
-          <div class="zoom-val" style="color:#666">--</div>
-          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:0%"></div></div>
-        </div>
-      </td>
-      <td>
-        <div class="zoom-cell">
-          <div class="zoom-val">7x</div>
-          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:6%"></div></div>
-        </div>
-      </td>
-      <td class="ok">&#9679;</td>
-      <td class="ok">&#9679;</td>
-      <td>IP68</td>
-      <td>4,614<br>mAh</td>
-      <td>207g</td>
-      <td>158.6<br>×74.8<br>×8.9</td>
-      <td><div class="antutu">約70万</div><div class="antutu-bar"><div class="antutu-fill" style="width:30%"></div></div></td>
-      <td>8GB<br>128-256GB</td>
-    </tr>
-
-    <!-- Nothing Phone 3a -->
-    <tr data-price="54800" data-felica="1" data-optical="2" data-weight="201">
-      <td>
-        <div class="device-cell">
-          <img src="https://fdn2.gsmarena.com/vv/bigpic/nothing-phone-3a-new.jpg" alt="Nothing Phone 3a" loading="lazy">
-          <div class="brand">Nothing</div>
-          <div class="name">Phone (3a)</div>
-        </div>
-      </td>
-      <td><div class="price">¥54,800〜</div><div class="price-sub">8GB/128GB</div><div class="buy-links"><a href="https://www.amazon.co.jp/dp/B0DZ6245MD" class="amazon" target="_blank">Amazon</a><a href="https://kakaku.com/item/J0000047687/" class="kakaku" target="_blank">価格.com</a></div></td>
-      <td>Snapdragon<br>7s Gen 3</td>
-      <td>6.77"<br>AMOLED<br>120Hz</td>
-      <td class="cam-detail">
-        50MP <span>広角</span><br>
-        8MP <span>超広角</span><br>
-        50MP <span>2x望遠</span>
-      </td>
-      <td>
-        <div class="zoom-cell">
-          <div class="zoom-val">2x</div>
-          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:20%"></div></div>
-        </div>
-      </td>
-      <td>
-        <div class="zoom-cell">
-          <div class="zoom-val">10x</div>
-          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:8%"></div></div>
-        </div>
-      </td>
-      <td class="ok">&#9679;</td>
-      <td class="ok">&#9679;</td>
-      <td>IP64</td>
-      <td>5,000<br>mAh</td>
-      <td>201g</td>
-      <td>163.5<br>×77.5<br>×8.4</td>
-      <td><div class="antutu">約78万</div><div class="antutu-bar"><div class="antutu-fill" style="width:34%"></div></div></td>
-      <td>8-12GB<br>128-256GB</td>
-    </tr>
-
-    <!-- Nothing Phone 3a Pro -->
-    <tr data-price="69800" data-felica="0" data-optical="3" data-weight="211">
-      <td>
-        <div class="device-cell">
-          <img src="https://fdn2.gsmarena.com/vv/bigpic/nothing-phone-3a-pro-new.jpg" alt="Nothing Phone 3a Pro" loading="lazy">
-          <div class="brand">Nothing</div>
-          <div class="name">Phone (3a) Pro</div>
-        </div>
-      </td>
-      <td><div class="price">¥69,800〜</div><div class="price-sub">12GB/256GB</div><div class="buy-links"><a href="https://1shopmobile.com/ja/product/nothing-phone-3a-pro/" class="official" target="_blank">1ShopMobile</a></div></td>
-      <td>Snapdragon<br>7s Gen 3</td>
-      <td>6.8"<br>AMOLED<br>120Hz</td>
-      <td class="cam-detail">
-        50MP <span>広角</span><br>
-        8MP <span>超広角</span><br>
-        50MP <span>3xペリスコ</span>
-      </td>
-      <td>
-        <div class="zoom-cell">
-          <div class="zoom-val">3x</div>
-          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:30%"></div></div>
-        </div>
-      </td>
-      <td>
-        <div class="zoom-cell">
-          <div class="zoom-val">30x</div>
-          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:25%"></div></div>
-        </div>
-      </td>
-      <td class="ng">&#10005;</td>
-      <td class="ok">&#9679;</td>
-      <td>IP65</td>
-      <td>5,050<br>mAh</td>
-      <td>211g</td>
-      <td>163.5<br>×77.5<br>×8.4</td>
-      <td><div class="antutu">約78万</div><div class="antutu-bar"><div class="antutu-fill" style="width:34%"></div></div></td>
-      <td>12GB<br>256GB</td>
-    </tr>
-
-    <!-- Xiaomi 13T -->
-    <tr data-price="55000" data-felica="1" data-optical="2" data-weight="197">
-      <td>
-        <div class="device-cell">
-          <img src="https://fdn2.gsmarena.com/vv/bigpic/xiaomi-13t.jpg" alt="Xiaomi 13T" loading="lazy">
-          <div class="brand">Xiaomi</div>
-          <div class="name">13T</div>
-        </div>
-      </td>
-      <td><div class="price">¥55,000前後</div><div class="price-sub">8GB/256GB 市場価格</div><div class="buy-links"><a href="https://www.amazon.co.jp/dp/B0CM9K24X2" class="amazon" target="_blank">Amazon</a><a href="https://kakaku.com/item/J0000043226/" class="kakaku" target="_blank">価格.com</a></div></td>
-      <td>Dimensity<br>8200-Ultra</td>
-      <td>6.67"<br>AMOLED<br>144Hz</td>
-      <td class="cam-detail">
-        50MP <span>広角 IMX707</span><br>
-        12MP <span>超広角</span><br>
-        50MP <span>2x望遠</span>
-      </td>
-      <td>
-        <div class="zoom-cell">
-          <div class="zoom-val">2x</div>
-          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:20%"></div></div>
-        </div>
-      </td>
-      <td>
-        <div class="zoom-cell">
-          <div class="zoom-val">10x</div>
-          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:8%"></div></div>
-        </div>
-      </td>
-      <td class="ok">&#9679;</td>
-      <td class="ok">&#9679;</td>
-      <td>IP68</td>
-      <td>5,000<br>mAh</td>
-      <td>197g</td>
-      <td>162.2<br>×75.7<br>×8.5</td>
-      <td><div class="antutu">約90万</div><div class="antutu-bar"><div class="antutu-fill" style="width:39%"></div></div></td>
-      <td>8GB<br>256GB</td>
-    </tr>
-
-    <!-- Xiaomi 15T -->
-    <tr data-price="64800" data-felica="0" data-optical="4" data-weight="194">
-      <td>
-        <div class="device-cell">
-          <img src="https://fdn2.gsmarena.com/vv/bigpic/xiaomi-15t.jpg" alt="Xiaomi 15T" loading="lazy">
-          <div class="brand">Xiaomi</div>
-          <div class="name">15T</div>
-        </div>
-      </td>
-      <td><div class="price">¥64,800〜</div><div class="price-sub">12GB/256GB</div><div class="buy-links"><a href="https://www.mi.com/jp/product/xiaomi-15t/buy/" class="official" target="_blank">公式</a><a href="https://kakaku.com/keitai/smartphone/model/M0000001170/" class="kakaku" target="_blank">価格.com</a></div></td>
-      <td>Dimensity<br>8400-Ultra</td>
-      <td>6.67"<br>AMOLED<br>120Hz</td>
-      <td class="cam-detail">
-        50MP <span>Leica 広角</span><br>
-        12MP <span>超広角</span><br>
-        50MP <span>Leica 2x望遠</span>
-      </td>
-      <td>
-        <div class="zoom-cell">
-          <div class="zoom-val">4x</div>
-          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:40%"></div></div>
-        </div>
-      </td>
-      <td>
-        <div class="zoom-cell">
-          <div class="zoom-val">60x</div>
-          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:50%"></div></div>
-        </div>
-      </td>
-      <td class="ng">&#10005;</td>
-      <td class="ok">&#9679;</td>
-      <td>IP68</td>
-      <td>5,500<br>mAh</td>
-      <td>194g</td>
-      <td>163.2<br>×78.0<br>×7.5</td>
-      <td><div class="antutu">約165万</div><div class="antutu-bar"><div class="antutu-fill" style="width:72%"></div></div></td>
-      <td>12GB<br>256GB</td>
-    </tr>
-
-    <!-- Xiaomi 15T Pro -->
-    <tr data-price="109800" data-felica="1" data-optical="5" data-weight="210">
-      <td>
-        <div class="device-cell">
-          <img src="https://fdn2.gsmarena.com/vv/bigpic/xiaomi-15t-pro.jpg" alt="Xiaomi 15T Pro" loading="lazy">
-          <div class="brand">Xiaomi</div>
-          <div class="name">15T Pro</div>
-        </div>
-      </td>
-      <td><div class="price">¥109,800〜</div><div class="price-sub">12GB/512GB</div><div class="buy-links"><a href="https://www.amazon.co.jp/dp/B0FNM9463V" class="amazon" target="_blank">Amazon</a><a href="https://www.mi.com/jp/product/xiaomi-15t-pro/buy/" class="official" target="_blank">公式</a></div></td>
-      <td>Dimensity<br>9400+</td>
-      <td>6.83"<br>AMOLED<br>144Hz</td>
-      <td class="cam-detail">
-        50MP <span>Leica Summilux</span><br>
-        12MP <span>超広角</span><br>
-        50MP <span>5xペリスコ</span>
-      </td>
-      <td>
-        <div class="zoom-cell">
-          <div class="zoom-val">5x</div>
-          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:50%"></div></div>
-        </div>
-      </td>
-      <td>
-        <div class="zoom-cell">
-          <div class="zoom-val">120x</div>
-          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:100%"></div></div>
-        </div>
-      </td>
-      <td class="ok">&#9679;</td>
-      <td class="ok">&#9679;</td>
-      <td>IP68</td>
-      <td>5,500<br>mAh</td>
-      <td>210g</td>
-      <td>162.7<br>×77.9<br>×8.0</td>
-      <td><div class="antutu best">約230万</div><div class="antutu-bar"><div class="antutu-fill top" style="width:100%"></div></div></td>
-      <td>12GB<br>512GB</td>
-    </tr>
-
-    <!-- Pixel 9a -->
-    <tr data-price="79900" data-felica="1" data-optical="0" data-weight="186">
-      <td>
-        <div class="device-cell">
-          <img src="https://fdn2.gsmarena.com/vv/bigpic/google-pixel-9a.jpg" alt="Pixel 9a" loading="lazy">
-          <div class="brand">Google</div>
-          <div class="name">Pixel 9a</div>
-        </div>
-      </td>
-      <td><div class="price">¥79,900〜</div><div class="price-sub">8GB/128GB</div><div class="buy-links"><a href="https://www.amazon.co.jp/dp/B0F531S2TC" class="amazon" target="_blank">Amazon</a><a href="https://store.google.com/jp/config/pixel_9a?hl=ja" class="official" target="_blank">Google</a></div></td>
-      <td>Tensor G4</td>
-      <td>6.3"<br>OLED<br>120Hz</td>
-      <td class="cam-detail">
-        48MP <span>広角</span><br>
-        13MP <span>超広角</span><br>
-        <span style="color:#555">望遠なし</span>
-      </td>
-      <td>
-        <div class="zoom-cell">
-          <div class="zoom-val" style="color:#666">--</div>
-          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:0%"></div></div>
-        </div>
-      </td>
-      <td>
-        <div class="zoom-cell">
-          <div class="zoom-val">8x</div>
-          <div class="zoom-bar-mini"><div class="zoom-bar-fill" style="width:7%"></div></div>
-        </div>
-      </td>
-      <td class="ok">&#9679;</td>
-      <td class="ok">&#9679;</td>
-      <td>IP68</td>
-      <td>5,100<br>mAh</td>
-      <td>186g</td>
-      <td>154.7<br>×73.3<br>×8.9</td>
-      <td><div class="antutu">約103万</div><div class="antutu-bar"><div class="antutu-fill" style="width:45%"></div></div></td>
-      <td>8GB<br>128-256GB</td>
-    </tr>
-
-  </tbody>
-</table>
-</div>
-
-<p class="note">
-  ※ 価格は2025-2026年時点のSIMフリー版参考価格<br>
-  ※ Nothing 3a Pro・Xiaomi 15T は日本版FeliCa非対応<br>
-  ※ Xiaomi 13Tは2023年発売モデル（市場在庫価格）<br>
-  ※ 画像出典: GSMArena
-</p>
-
+<script src="vendor/leaflet.js"></script>
+<script src="vendor/leaflet.markercluster.js"></script>
 <script>
-// フィルター（複数選択対応）
-document.querySelectorAll('.filter-bar button').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const filter = btn.dataset.filter;
-    if (filter === 'all') {
-      // 「すべて」を押したら他を全解除
-      document.querySelectorAll('.filter-bar button').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    } else {
-      // 個別フィルターのトグル
-      btn.classList.toggle('active');
-      // 「すべて」を外す
-      document.querySelector('.filter-bar button[data-filter="all"]').classList.remove('active');
-      // 何も選択されていなければ「すべて」に戻す
-      const anyActive = document.querySelectorAll('.filter-bar button.active');
-      if (anyActive.length === 0) {
-        document.querySelector('.filter-bar button[data-filter="all"]').classList.add('active');
-      }
+const CENTER=[35.6816,139.6860], ZOOM=14;  // 初台周辺
+let DATA=[], filtered=[], userLatLng=null, activeMarker=null;
+const markerById=new Map();
+
+// ---- genre buckets (128種を主要カテゴリへ集約) ----
+const GENRE_BUCKETS=[
+  ['ラーメン・つけ麺',/ラーメン|つけ麺|油そば|担々麺|まぜそば/],
+  ['そば・うどん',/そば|蕎麦|うどん/],
+  ['寿司・海鮮',/寿司|鮨|海鮮|魚|うなぎ|天ぷら|割烹|日本料理|懐石|和食/],
+  ['焼肉・ホルモン',/焼肉|ホルモン|ステーキ|鉄板/],
+  ['焼き鳥・串',/焼き鳥|焼鳥|串/],
+  ['居酒屋・バー',/居酒屋|ダイニングバー|バー|ビアバー|立ち飲み|ワインバー|日本酒/],
+  ['イタリアン・フレンチ',/イタリアン|フレンチ|ビストロ|スペイン|ピザ|パスタ|洋食/],
+  ['中華',/中華|餃子|四川|台湾|点心/],
+  ['アジア・エスニック',/タイ|ベトナム|韓国|インド|ネパール|エスニック|アジア/],
+  ['カレー',/カレー/],
+  ['カフェ・喫茶',/カフェ|喫茶|コーヒー|紅茶/],
+  ['パン・スイーツ',/パン|ベーカリー|ケーキ|スイーツ|洋菓子|和菓子|アイス|チョコ|ドーナツ|タピオカ/],
+  ['とんかつ・揚げ物',/とんかつ|から揚げ|串揚げ|串かつ|天丼/],
+  ['定食・丼',/定食|食堂|丼|牛丼|お好み焼き|もんじゃ/],
+];
+function bucketOf(g){
+  for(const [name,re] of GENRE_BUCKETS) if(re.test(g)) return name;
+  return 'その他';
+}
+const BUDGETS=[['指定なし',null],['〜1,000円',1000],['〜2,000円',2000],['〜4,000円',4000],['〜6,000円',6000],['〜10,000円',10000],['〜20,000円',20000]];
+const RATINGS=[['すべて',0],['★4.0+',4.0],['★3.8+',3.8],['★3.6+',3.6]];
+const TOGGLES=[['award','受賞店'],['privateRoom','個室あり'],['reservation','予約可'],['nosmoke','禁煙']];
+
+// filter state
+const F={genre:new Set(),station:'',budget:null,rating:0,toggles:new Set(),q:''};
+
+// ---------- map ----------
+const map=L.map('map',{zoomControl:false,attributionControl:true}).setView(CENTER,ZOOM);
+L.control.zoom({position:'bottomright'}).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  maxZoom:19,attribution:'&copy; OpenStreetMap'
+}).addTo(map);
+const cluster=L.markerClusterGroup({
+  maxClusterRadius:48,spiderfyOnMaxZoom:true,showCoverageOnHover:false,chunkedLoading:true
+});
+map.addLayer(cluster);
+
+function pinColor(r){return r>=4.0?'#e8a200':r>=3.8?'#d6452f':'#3a78d6';}
+function makeIcon(r){
+  return L.divIcon({className:'',html:`<div class="marker-pin" style="background:${pinColor(r)}"></div>`,
+    iconSize:[16,16],iconAnchor:[8,8],popupAnchor:[0,-8]});
+}
+
+const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function gmapsUrl(d){return `https://www.google.com/maps/dir/?api=1&destination=${d.lat},${d.lng}`;}
+
+function popupHtml(d){
+  const tel=d.phone?`<a class="a-tel" href="tel:${esc(d.phone)}">電話</a>`:'';
+  return `<div class="pop">
+    <img loading="lazy" src="${esc(d.photo)}" alt="">
+    <div class="pad">
+      <div class="pn">${esc(d.name)}</div>
+      <div class="pm">
+        <span class="rate"><span class="star">★</span>${d.rating??'-'}</span>
+        <span>${esc(d.genre)}</span>
+        ${d.budgetNight?`<span>夜 ${esc(d.budgetNight)}</span>`:''}
+        <span>${esc(d.station)}</span>
+      </div>
+      <div class="acts">
+        ${tel}
+        <a class="a-tbl" href="${esc(d.url)}" target="_blank" rel="noopener">食べログ</a>
+        <a class="a-map" href="${gmapsUrl(d)}" target="_blank" rel="noopener">経路</a>
+      </div>
+    </div></div>`;
+}
+
+// ---------- list ----------
+const listEl=document.getElementById('list');
+const RENDER_STEP=40; let renderLimit=RENDER_STEP;
+
+function haversine(a,b,c,d){
+  const R=6371,toR=x=>x*Math.PI/180;
+  const dLat=toR(c-a),dLng=toR(d-b);
+  const s=Math.sin(dLat/2)**2+Math.cos(toR(a))*Math.cos(toR(c))*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+function cardHtml(d){
+  const badges=[];
+  if(d.tabelogAward)badges.push('<span class="badge award">Tabelog Award</span>');
+  if(d.hyakumeiten)badges.push('<span class="badge award">百名店</span>');
+  badges.push(`<span class="badge gen">${esc(d.genreTop)}</span>`);
+  if(d.privateRoom)badges.push('<span class="badge">個室</span>');
+  const dist=userLatLng?` ・ ${haversine(userLatLng[0],userLatLng[1],d.lat,d.lng).toFixed(2)}km`:'';
+  return `<div class="card" data-id="${d._id}">
+    <img class="thumb" loading="lazy" src="${esc(d.photo)}" alt="">
+    <div class="info">
+      <div class="nm">${esc(d.name)}</div>
+      <div class="meta">
+        <span class="rate"><span class="star">★</span>${d.rating??'-'}</span>
+        <span>口コミ${d.reviews}</span>
+        <span>${esc(d.station)}${dist}</span>
+        ${d.budgetNight?`<span>夜 ${esc(d.budgetNight)}</span>`:''}
+      </div>
+      <div class="badges">${badges.join('')}</div>
+    </div></div>`;
+}
+function renderList(){
+  const slice=filtered.slice(0,renderLimit);
+  listEl.innerHTML = filtered.length
+    ? slice.map(cardHtml).join('') + (filtered.length>renderLimit?`<div class="empty">スクロールでさらに表示（${filtered.length-renderLimit}件）</div>`:'')
+    : '<div class="empty">条件に合うお店が見つかりませんでした。<br>絞り込みを変えてみてください。</div>';
+}
+listEl.addEventListener('scroll',()=>{
+  if(listEl.scrollTop+listEl.clientHeight>listEl.scrollHeight-200 && renderLimit<filtered.length){
+    renderLimit+=RENDER_STEP; renderList();
+  }
+});
+listEl.addEventListener('click',e=>{
+  const c=e.target.closest('.card'); if(!c)return;
+  const d=DATA[+c.dataset.id]; focusStore(d);
+});
+function focusStore(d){
+  map.setView([d.lat,d.lng],17,{animate:true});
+  const m=markerById.get(d._id);
+  if(m){ cluster.zoomToShowLayer(m,()=>m.openPopup()); }
+  if(window.innerWidth<640) sheet.classList.add('collapsed'),sheet.classList.remove('expanded');
+}
+
+// ---------- filtering ----------
+function applyFilters(){
+  const q=F.q.trim();
+  filtered=DATA.filter(d=>{
+    if(F.genre.size && !F.genre.has(d._bucket))return false;
+    if(F.station && d.station!==F.station)return false;
+    if(F.budget!=null){ if(d.budgetMin==null || d.budgetMin>F.budget)return false; }
+    if(F.rating && (d.rating||0)<F.rating)return false;
+    for(const t of F.toggles){
+      if(t==='award' && !(d.hyakumeiten||d.tabelogAward))return false;
+      if(t==='privateRoom' && !d.privateRoom)return false;
+      if(t==='reservation' && !/予約可|完全予約/.test(d.reservation))return false;
+      if(t==='nosmoke' && !/全席禁煙/.test(d.smoking))return false;
     }
-
-    // アクティブなフィルターを収集
-    const activeFilters = Array.from(document.querySelectorAll('.filter-bar button.active'))
-      .map(b => b.dataset.filter);
-
-    document.querySelectorAll('tbody tr').forEach(row => {
-      const price = parseInt(row.dataset.price);
-      const felica = row.dataset.felica === '1';
-      const optical = parseInt(row.dataset.optical);
-
-      if (activeFilters.includes('all')) {
-        row.style.display = '';
-        return;
-      }
-      // すべての有効フィルターをAND条件で適用
-      let show = true;
-      if (activeFilters.includes('felica') && !felica) show = false;
-      if (activeFilters.includes('under7') && price > 70000) show = false;
-      if (activeFilters.includes('zoom5') && optical < 5) show = false;
-      row.style.display = show ? '' : 'none';
-    });
+    if(q && !(d.name.includes(q)||d.genre.includes(q)||d.station.includes(q)))return false;
+    return true;
   });
+  sortList();
+  // markers
+  cluster.clearLayers();
+  const ms=[];
+  for(const d of filtered){ const m=markerById.get(d._id); if(m)ms.push(m); }
+  cluster.addLayers(ms);
+  // count badge
+  document.getElementById('num').textContent=filtered.length;
+  const fc=document.getElementById('fcount');
+  const active=F.genre.size+(F.station?1:0)+(F.budget!=null?1:0)+(F.rating?1:0)+F.toggles.size;
+  fc.hidden=!active; fc.textContent=active;
+  renderLimit=RENDER_STEP; renderList(); listEl.scrollTop=0;
+}
+function sortList(){
+  const by=document.getElementById('sort').value;
+  filtered.sort((a,b)=>{
+    if(by==='dist'&&userLatLng){
+      return haversine(userLatLng[0],userLatLng[1],a.lat,a.lng)-haversine(userLatLng[0],userLatLng[1],b.lat,b.lng);
+    }
+    if(by==='reviews')return b.reviews-a.reviews;
+    if(by==='saves')return b.saves-a.saves;
+    return (b.rating||0)-(a.rating||0)||b.reviews-a.reviews;
+  });
+}
+document.getElementById('sort').addEventListener('change',()=>{sortList();renderLimit=RENDER_STEP;renderList();listEl.scrollTop=0;});
+
+// ---------- search ----------
+let qt; document.getElementById('q').addEventListener('input',e=>{
+  clearTimeout(qt); qt=setTimeout(()=>{F.q=e.target.value;applyFilters();},220);
 });
 
-// ソート
-(function() {
-  const table = document.querySelector('table');
-  const tbody = table.querySelector('tbody');
-  const headers = table.querySelectorAll('th');
-  let currentSort = { col: -1, asc: true };
+// ---------- filter modal UI ----------
+const filterModal=document.getElementById('filter');
+document.getElementById('openFilter').onclick=()=>filterModal.classList.add('show');
+filterModal.addEventListener('click',e=>{if(e.target.dataset.close!==undefined||e.target===e.currentTarget.querySelector('.scrim'))filterModal.classList.remove('show');});
+filterModal.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{applyFilters();filterModal.classList.remove('show');});
 
-  // 各列のソートキー抽出関数
-  function getSortValue(row, colIndex) {
-    const cell = row.cells[colIndex];
-    const text = cell.textContent.trim();
-    // data属性ベースのソート
-    if (colIndex === 1) return parseInt(row.dataset.price) || 0; // 価格
-    if (colIndex === 5) return parseInt(row.dataset.optical) || 0; // 光学ズーム
-    if (colIndex === 10) return parseInt(row.dataset.weight) || 0; // 重さ
-    // 数値抽出（AnTuTu、電池、ズーム等）
-    const num = text.replace(/[^0-9.]/g, '');
-    if (num && !isNaN(parseFloat(num))) return parseFloat(num);
-    // ○×ソート
-    if (text === '●') return 1;
-    if (text === '✕') return 0;
-    return text.toLowerCase();
-  }
-
-  headers.forEach((th, index) => {
-    th.addEventListener('click', () => {
-      const asc = currentSort.col === index ? !currentSort.asc : true;
-      currentSort = { col: index, asc };
-
-      // 矢印更新
-      headers.forEach(h => {
-        const arrow = h.querySelector('.sort-arrow');
-        if (arrow) arrow.remove();
-      });
-      const arrow = document.createElement('span');
-      arrow.className = 'sort-arrow';
-      arrow.textContent = asc ? ' ▲' : ' ▼';
-      th.appendChild(arrow);
-
-      // ソート実行
-      const rows = Array.from(tbody.querySelectorAll('tr'));
-      rows.sort((a, b) => {
-        const va = getSortValue(a, index);
-        const vb = getSortValue(b, index);
-        if (typeof va === 'number' && typeof vb === 'number') {
-          return asc ? va - vb : vb - va;
-        }
-        return asc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
-      });
-      rows.forEach(row => tbody.appendChild(row));
-    });
+function chip(label,on,onclick){
+  const b=document.createElement('button');b.className='chip'+(on?' on':'');b.textContent=label;b.onclick=onclick;return b;
+}
+function buildFilterUI(){
+  // genre buckets present in data, by frequency
+  const cnt={}; DATA.forEach(d=>cnt[d._bucket]=(cnt[d._bucket]||0)+1);
+  const order=[...GENRE_BUCKETS.map(g=>g[0]),'その他'].filter(g=>cnt[g]);
+  const gc=document.getElementById('genreChips');
+  order.forEach(g=>{
+    const b=chip(`${g}`,false,()=>{F.genre.has(g)?F.genre.delete(g):F.genre.add(g);b.classList.toggle('on');});
+    gc.appendChild(b);
   });
-})();
-</script>
+  // stations
+  const ss=document.getElementById('stationSel');
+  const stc={}; DATA.forEach(d=>stc[d.station]=(stc[d.station]||0)+1);
+  Object.keys(stc).sort((a,b)=>stc[b]-stc[a]).forEach(s=>{
+    const o=document.createElement('option');o.value=s;o.textContent=`${s}（${stc[s]}）`;ss.appendChild(o);
+  });
+  ss.onchange=e=>F.station=e.target.value;
+  // budget
+  const bc=document.getElementById('budgetChips');
+  BUDGETS.forEach(([l,v])=>{const b=chip(l,v===null,()=>{F.budget=v;bc.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));b.classList.add('on');});bc.appendChild(b);});
+  // rating
+  const rc=document.getElementById('ratingChips');
+  RATINGS.forEach(([l,v])=>{const b=chip(l,v===0,()=>{F.rating=v;rc.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));b.classList.add('on');});rc.appendChild(b);});
+  // toggles
+  const tc=document.getElementById('toggleChips');
+  TOGGLES.forEach(([k,l])=>{const b=chip(l,false,()=>{F.toggles.has(k)?F.toggles.delete(k):F.toggles.add(k);b.classList.toggle('on');});tc.appendChild(b);});
+}
+document.getElementById('resetF').onclick=()=>{
+  F.genre.clear();F.station='';F.budget=null;F.rating=0;F.toggles.clear();
+  document.querySelectorAll('#filter .chip').forEach(c=>c.classList.remove('on'));
+  document.querySelectorAll('#budgetChips .chip')[0].classList.add('on');
+  document.querySelectorAll('#ratingChips .chip')[0].classList.add('on');
+  document.getElementById('stationSel').value='';
+};
 
+// ---------- bottom sheet drag ----------
+const sheet=document.getElementById('sheet'),grip=document.getElementById('grip');
+let dragY=null,startH=0;
+function setH(px){sheet.style.height=Math.max(96,Math.min(window.innerHeight*0.92,px))+'px';}
+grip.addEventListener('pointerdown',e=>{dragY=e.clientY;startH=sheet.offsetHeight;sheet.style.transition='none';grip.setPointerCapture(e.pointerId);});
+grip.addEventListener('pointermove',e=>{if(dragY==null)return;setH(startH+(dragY-e.clientY));});
+grip.addEventListener('pointerup',e=>{
+  if(dragY==null)return;
+  sheet.style.transition='';const h=sheet.offsetHeight;sheet.style.height='';
+  sheet.classList.remove('expanded','collapsed');
+  if(h>window.innerHeight*0.62)sheet.classList.add('expanded');
+  else if(h<window.innerHeight*0.22)sheet.classList.add('collapsed');
+  dragY=null;
+});
+grip.addEventListener('click',()=>{ // tap toggles
+  if(sheet.classList.contains('expanded'))sheet.classList.remove('expanded');
+  else sheet.classList.add('expanded'),sheet.classList.remove('collapsed');
+});
+
+// ---------- geolocation ----------
+let userMarker=null;
+document.getElementById('locBtn').onclick=()=>{
+  if(!navigator.geolocation){alert('お使いの端末では現在地を取得できません');return;}
+  const btn=document.getElementById('locBtn');btn.classList.add('active');
+  navigator.geolocation.getCurrentPosition(p=>{
+    userLatLng=[p.coords.latitude,p.coords.longitude];
+    if(userMarker)userMarker.setLatLng(userLatLng);
+    else userMarker=L.circleMarker(userLatLng,{radius:8,color:'#fff',weight:3,fillColor:'#3a78d6',fillOpacity:1}).addTo(map);
+    map.setView(userLatLng,15);
+    document.getElementById('sort').value='dist';
+    sortList();renderLimit=RENDER_STEP;renderList();listEl.scrollTop=0;
+  },err=>{
+    btn.classList.remove('active');
+    alert('現在地を取得できませんでした。位置情報の許可をご確認ください。');
+  },{enableHighAccuracy:true,timeout:8000});
+};
+
+// ---------- init ----------
+fetch('data/restaurants.json').then(r=>r.json()).then(rows=>{
+  DATA=rows;
+  DATA.forEach((d,i)=>{d._id=i;d._bucket=bucketOf(d.genre);});
+  // build markers once
+  DATA.forEach(d=>{
+    const m=L.marker([d.lat,d.lng],{icon:makeIcon(d.rating||0)});
+    m.bindPopup(()=>popupHtml(d),{maxWidth:240,minWidth:230});
+    markerById.set(d._id,m);
+  });
+  buildFilterUI();
+  applyFilters();
+}).catch(e=>{
+  listEl.innerHTML='<div class="empty">データの読み込みに失敗しました。<br>'+esc(e.message)+'</div>';
+});
+</script>
 </body>
 </html>
