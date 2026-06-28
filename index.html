@@ -371,9 +371,15 @@ listEl.addEventListener('click',e=>{
   const d=DATA[+c.dataset.id]; focusStore(d);
 });
 function focusStore(d){
-  map.setView([d.lat,d.lng],17,{animate:true});
-  const m=markerById.get(d._id);
-  if(m){ cluster.zoomToShowLayer(m,()=>m.openPopup()); }
+  if(boundsOnly){
+    // 「この範囲」表示中は地図を動かさず、その場でポップアップだけ開く
+    // autoPan:false にしないと端の店で地図がパンして範囲が変わってしまう
+    L.popup({maxWidth:240,minWidth:230,autoPan:false}).setLatLng([d.lat,d.lng]).setContent(popupHtml(d)).openOn(map);
+  }else{
+    map.setView([d.lat,d.lng],17,{animate:true});
+    const m=markerById.get(d._id);
+    if(m){ cluster.zoomToShowLayer(m,()=>m.openPopup()); }
+  }
   if(window.innerWidth<640) sheet.classList.add('collapsed'),sheet.classList.remove('expanded');
 }
 
@@ -382,7 +388,7 @@ function applyFilters(){
   const q=F.q.trim();
   filtered=DATA.filter(d=>{
     if(F.genre.size && !F.genre.has(d._bucket))return false;
-    if(F.days.size){ for(const day of F.days){ if(!d.openDays || !d.openDays[day])return false; } }
+    if(F.days.size && d.openDays){ for(const day of F.days){ if(!d.openDays[day])return false; } }
     if(F.station && d.station!==F.station)return false;
     if(F.bmin!=null || F.bmax!=null){
       if(d.budgetMin==null && d.budgetMax==null)return false;        // 予算不明は除外
@@ -523,7 +529,8 @@ document.getElementById('locBtn').onclick=()=>{
 };
 
 // ---------- init ----------
-fetch('data/restaurants.json').then(r=>r.json()).then(rows=>{
+// ?v= はデータ更新時のキャッシュ回避用。openDays等の項目追加時はバージョンを上げる
+fetch('data/restaurants.json?v=2',{cache:'no-cache'}).then(r=>r.json()).then(rows=>{
   DATA=rows;
   DATA.forEach((d,i)=>{d._id=i;d._bucket=bucketOf(d.genre);});
   // build markers once
