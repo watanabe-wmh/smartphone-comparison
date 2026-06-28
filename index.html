@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#d6452f">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="初台グルメ">
 <title>初台グルメマップ｜渋谷・新宿・下北沢の食べログ評価3.4以上1426店</title>
 <meta name="description" content="初台・渋谷・新宿・下北沢エリアの食べログ評価3.4以上の1426店をスマホで探せるグルメマップ。ジャンル・予算・評価・営業曜日・現在地から絞り込み。">
 
@@ -94,13 +99,21 @@
   .list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 10px calc(20px + var(--safe-b))}
 
   .card{
+    position:relative;
     display:flex;gap:10px;padding:10px;border-radius:14px;background:#fff;border:1px solid var(--line);
     margin-bottom:9px;align-items:stretch;
   }
   .card:active{background:#fafaf8}
+  .favbtn{position:absolute;top:6px;right:6px;width:30px;height:30px;border:none;background:transparent;
+    font-size:1.15rem;line-height:1;color:#c9c9c2;cursor:pointer;padding:0;z-index:2}
+  .favbtn.on{color:var(--gold)}
+  .popfav{position:absolute;top:6px;right:6px;width:34px;height:34px;border:none;border-radius:50%;
+    background:rgba(255,255,255,.92);font-size:1.15rem;line-height:1;color:#c9c9c2;cursor:pointer;
+    box-shadow:0 1px 4px rgba(0,0,0,.25);z-index:2}
+  .popfav.on{color:var(--gold)}
   .thumb{width:84px;height:84px;border-radius:10px;object-fit:cover;flex:none;background:#eee}
   .info{flex:1;min-width:0;display:flex;flex-direction:column}
-  .nm{font-size:.92rem;font-weight:700;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .nm{font-size:.92rem;font-weight:700;line-height:1.25;padding-right:26px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .meta{font-size:.72rem;color:var(--sub);margin-top:3px;display:flex;flex-wrap:wrap;gap:4px 8px}
   .rate{display:inline-flex;align-items:center;gap:3px;font-weight:800;color:var(--gold)}
   .rate .star{color:var(--gold)}
@@ -225,6 +238,14 @@
         <div class="chips" id="dayChips"></div>
       </div>
       <div class="fgroup">
+        <label>駅から徒歩</label>
+        <div class="chips" id="walkChips"></div>
+      </div>
+      <div class="fgroup">
+        <label>現在地から <span class="hint">位置情報を使います</span></label>
+        <div class="chips" id="radiusChips"></div>
+      </div>
+      <div class="fgroup">
         <label>最寄駅</label>
         <select class="full" id="stationSel"><option value="">すべての駅</option></select>
       </div>
@@ -284,11 +305,30 @@ const BUCKET_NAMES=[...GENRE_BUCKETS.map(g=>g[0]),'その他'];  // URL共有で
 // ディナー予算の選択肢（円）。下限/上限プルダウンで共用
 const BUDGET_STEPS=[1000,2000,3000,4000,5000,6000,8000,10000,15000,20000,30000];
 const RATINGS=[['すべて',0],['★4.0+',4.0],['★3.8+',3.8],['★3.6+',3.6]];
-const TOGGLES=[['award','受賞店'],['privateRoom','個室あり'],['reservation','予約可'],['nosmoke','禁煙']];
+const TOGGLES=[['opennow','今営業中'],['fav','お気に入り'],['award','受賞店'],['privateRoom','個室あり'],['reservation','予約可'],['nosmoke','禁煙']];
 const DAYNAMES=['月','火','水','木','金','土','日'];
+const WALKS=[['指定なし',null],['1分以内',1],['3分以内',3],['5分以内',5],['10分以内',10]];
+const RADII=[['指定なし',null],['300m',300],['500m',500],['1km',1000]];
 
 // filter state（budgetMin/Max=選択した下限・上限。daysは営業日として要求する曜日index）
-const F={genre:new Set(),days:new Set(),station:'',bmin:null,bmax:null,rating:0,toggles:new Set(),q:''};
+const F={genre:new Set(),days:new Set(),station:'',bmin:null,bmax:null,rating:0,walk:null,radius:null,toggles:new Set(),q:''};
+
+// お気に入り（端末ローカル保存。店舗URLをキーにする）
+const FAVKEY='gourmet_favs';
+let favs=new Set();
+try{ favs=new Set(JSON.parse(localStorage.getItem(FAVKEY)||'[]')); }catch(e){}
+function saveFavs(){ try{ localStorage.setItem(FAVKEY,JSON.stringify([...favs])); }catch(e){} }
+function toggleFav(url){ if(favs.has(url))favs.delete(url); else favs.add(url); saveFavs(); }
+window.__toggleFav=(btn,url)=>{ toggleFav(url); btn.classList.toggle('on',favs.has(url)); btn.textContent=favs.has(url)?'★':'☆'; if(F.toggles.has('fav'))applyFilters(); };
+
+// 「今営業中」判定（曜日＋現在時刻。営業時間レンジから・参考値）
+function isOpenNow(d,today,nm){
+  const rg=d.openRanges||[];
+  if(d.openDays&&d.openDays[today]) for(const[s,e]of rg){ if(nm>=s&&nm<e)return true; }
+  const yest=(today+6)%7;                              // 翌日にまたぐ営業（前日深夜帯）
+  if(d.openDays&&d.openDays[yest]) for(const[s,e]of rg){ if(e>1440&&nm+1440>=s&&nm+1440<e)return true; }
+  return false;
+}
 
 // ---------- map ----------
 const map=L.map('map',{zoomControl:false,attributionControl:true}).setView(CENTER,ZOOM);
@@ -312,15 +352,19 @@ function gmapsUrl(d){return `https://www.google.com/maps/dir/?api=1&destination=
 
 function popupHtml(d){
   const tel=d.phone?`<a class="a-tel" href="tel:${esc(d.phone)}">電話</a>`:'';
+  const fav=favs.has(d.url);
+  const now=new Date(), open=isOpenNow(d,(now.getDay()+6)%7,now.getHours()*60+now.getMinutes());
   return `<div class="pop">
     <img loading="lazy" src="${esc(d.photo)}" alt="">
+    <button class="popfav${fav?' on':''}" onclick="window.__toggleFav(this,'${esc(d.url)}')" aria-label="お気に入り">${fav?'★':'☆'}</button>
     <div class="pad">
       <div class="pn">${esc(d.name)}</div>
       <div class="pm">
         <span class="rate"><span class="star">★</span>${d.rating??'-'}</span>
         <span>${esc(d.genre)}</span>
         ${d.budgetNight?`<span>夜 ${esc(d.budgetNight)}</span>`:''}
-        <span>${esc(d.station)}</span>
+        <span>${esc(d.station)}${d.walkMin!=null?`徒歩${d.walkMin}分`:''}</span>
+        ${open?'<span style="color:#2e9e5b;font-weight:700">営業中</span>':''}
         ${/不定休/.test(d.holiday||'')?'<span style="color:#bd5a07;font-weight:700">不定休・要確認</span>':''}
       </div>
       <div class="acts">
@@ -349,7 +393,9 @@ function cardHtml(d){
   if(d.privateRoom)badges.push('<span class="badge">個室</span>');
   if(/不定休/.test(d.holiday||''))badges.push('<span class="badge irregular">不定休・要確認</span>');
   const dist=userLatLng?` ・ ${haversine(userLatLng[0],userLatLng[1],d.lat,d.lng).toFixed(2)}km`:'';
+  const fav=favs.has(d.url);
   return `<div class="card" data-id="${d._id}">
+    <button class="favbtn${fav?' on':''}" data-fav="${esc(d.url)}" aria-label="お気に入り">${fav?'★':'☆'}</button>
     <img class="thumb" loading="lazy" src="${esc(d.photo)}" alt="">
     <div class="info">
       <div class="nm">${esc(d.name)}</div>
@@ -409,6 +455,10 @@ map.on('moveend',()=>{
   writeURL();                              // 地図位置もURLに反映
 });
 listEl.addEventListener('click',e=>{
+  const fb=e.target.closest('.favbtn');
+  if(fb){ e.stopPropagation(); toggleFav(fb.dataset.fav); const on=favs.has(fb.dataset.fav);
+    fb.classList.toggle('on',on); fb.textContent=on?'★':'☆';
+    if(F.toggles.has('fav'))applyFilters(); return; }
   const c=e.target.closest('.card'); if(!c)return;
   const d=DATA[+c.dataset.id]; focusStore(d);
 });
@@ -428,9 +478,12 @@ function focusStore(d){
 // ---------- filtering ----------
 function applyFilters(){
   const q=F.q.trim();
+  const now=new Date(), today=(now.getDay()+6)%7, nowMin=now.getHours()*60+now.getMinutes();
   filtered=DATA.filter(d=>{
     if(F.genre.size && !F.genre.has(d._bucket))return false;
     if(F.days.size && d.openDays){ for(const day of F.days){ if(!d.openDays[day])return false; } }
+    if(F.walk!=null){ if(d.walkMin==null || d.walkMin>F.walk)return false; }
+    if(F.radius!=null && userLatLng){ if(haversine(userLatLng[0],userLatLng[1],d.lat,d.lng)*1000>F.radius)return false; }
     if(F.station && d.station!==F.station)return false;
     if(F.bmin!=null || F.bmax!=null){
       if(d.budgetMin==null && d.budgetMax==null)return false;        // 予算不明は除外
@@ -439,6 +492,8 @@ function applyFilters(){
     }
     if(F.rating && (d.rating||0)<F.rating)return false;
     for(const t of F.toggles){
+      if(t==='opennow' && !isOpenNow(d,today,nowMin))return false;
+      if(t==='fav' && !favs.has(d.url))return false;
       if(t==='award' && !(d.hyakumeiten||d.tabelogAward))return false;
       if(t==='privateRoom' && !d.privateRoom)return false;
       if(t==='reservation' && !/予約可|完全予約/.test(d.reservation))return false;
@@ -455,7 +510,7 @@ function applyFilters(){
   cluster.addLayers(ms);
   // filter badge
   const fc=document.getElementById('fcount');
-  const active=F.genre.size+F.days.size+(F.station?1:0)+((F.bmin!=null||F.bmax!=null)?1:0)+(F.rating?1:0)+F.toggles.size;
+  const active=F.genre.size+F.days.size+(F.station?1:0)+((F.bmin!=null||F.bmax!=null)?1:0)+(F.rating?1:0)+(F.walk!=null?1:0)+(F.radius!=null?1:0)+F.toggles.size;
   fc.hidden=!active; fc.textContent=active;
   refreshList(true);
   writeURL();
@@ -515,6 +570,12 @@ function buildFilterUI(){
     const b=chip(nm,F.days.has(i),()=>{F.days.has(i)?F.days.delete(i):F.days.add(i);b.classList.toggle('on');});
     dc.appendChild(b);
   });
+  // 駅から徒歩
+  const wc=document.getElementById('walkChips');
+  WALKS.forEach(([l,v])=>{const b=chip(l,v===F.walk,()=>{F.walk=v;wc.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));b.classList.add('on');});wc.appendChild(b);});
+  // 現在地からの半径（未取得なら位置情報を促す）
+  const radc=document.getElementById('radiusChips');
+  RADII.forEach(([l,v])=>{const b=chip(l,v===F.radius,()=>{F.radius=v;radc.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));b.classList.add('on');if(v!=null&&!userLatLng)requestLocation(()=>applyFilters());});radc.appendChild(b);});
   // ディナー予算（下限〜上限）
   const yen=v=>'¥'+v.toLocaleString();
   const minSel=document.getElementById('budgetMinSel'),maxSel=document.getElementById('budgetMaxSel');
@@ -544,6 +605,8 @@ function writeURL(){
   if(F.bmin!=null) u.set('bmin',F.bmin);
   if(F.bmax!=null) u.set('bmax',F.bmax);
   if(F.rating) u.set('r',F.rating);
+  if(F.walk!=null) u.set('w',F.walk);
+  if(F.radius!=null) u.set('rad',F.radius);
   if(F.toggles.size) u.set('t',[...F.toggles].join(','));
   if(F.q&&F.q.trim()) u.set('q',F.q.trim());
   const s=document.getElementById('sort').value; if(s!=='center') u.set('s',s);
@@ -560,6 +623,8 @@ function readURL(){
   if(u.has('bmin')) F.bmin=+u.get('bmin')||null;
   if(u.has('bmax')) F.bmax=+u.get('bmax')||null;
   if(u.has('r')) F.rating=+u.get('r')||0;
+  if(u.has('w')) F.walk=+u.get('w')||null;
+  if(u.has('rad')) F.radius=+u.get('rad')||null;
   if(u.has('t')) u.get('t').split(',').forEach(k=>{if(k)F.toggles.add(k);});
   if(u.has('q')){ F.q=u.get('q'); document.getElementById('q').value=F.q; }
   if(u.has('s')) document.getElementById('sort').value=u.get('s');
@@ -586,9 +651,11 @@ async function shareCurrent(){
 }
 document.getElementById('shareBtn').onclick=shareCurrent;
 document.getElementById('resetF').onclick=()=>{
-  F.genre.clear();F.days.clear();F.station='';F.bmin=null;F.bmax=null;F.rating=0;F.toggles.clear();
+  F.genre.clear();F.days.clear();F.station='';F.bmin=null;F.bmax=null;F.rating=0;F.walk=null;F.radius=null;F.toggles.clear();
   document.querySelectorAll('#filter .chip').forEach(c=>c.classList.remove('on'));
   document.querySelectorAll('#ratingChips .chip')[0].classList.add('on');
+  document.querySelectorAll('#walkChips .chip')[0].classList.add('on');
+  document.querySelectorAll('#radiusChips .chip')[0].classList.add('on');
   document.getElementById('stationSel').value='';
   document.getElementById('budgetMinSel').value='';
   document.getElementById('budgetMaxSel').value='';
@@ -615,25 +682,25 @@ grip.addEventListener('click',()=>{ // tap toggles
 
 // ---------- geolocation ----------
 let userMarker=null;
-document.getElementById('locBtn').onclick=()=>{
+function requestLocation(onDone){
   if(!navigator.geolocation){alert('お使いの端末では現在地を取得できません');return;}
   const btn=document.getElementById('locBtn');btn.classList.add('active');
   navigator.geolocation.getCurrentPosition(p=>{
     userLatLng=[p.coords.latitude,p.coords.longitude];
     if(userMarker)userMarker.setLatLng(userLatLng);
     else userMarker=L.circleMarker(userLatLng,{radius:8,color:'#fff',weight:3,fillColor:'#3a78d6',fillOpacity:1}).addTo(map);
-    map.setView(userLatLng,15);
-    document.getElementById('sort').value='dist';
-    sortList();refreshList(true);writeURL();
+    if(onDone){ onDone(); }
+    else { map.setView(userLatLng,15); document.getElementById('sort').value='dist'; sortList(); refreshList(true); writeURL(); }
   },err=>{
     btn.classList.remove('active');
     alert('現在地を取得できませんでした。位置情報の許可をご確認ください。');
   },{enableHighAccuracy:true,timeout:8000});
-};
+}
+document.getElementById('locBtn').onclick=()=>requestLocation();
 
 // ---------- init ----------
 // ?v= はデータ更新時のキャッシュ回避用。openDays等の項目追加時はバージョンを上げる
-fetch('data/restaurants.json?v=3',{cache:'no-cache'}).then(r=>r.json()).then(rows=>{
+fetch('data/restaurants.json?v=4',{cache:'no-cache'}).then(r=>r.json()).then(rows=>{
   DATA=rows;
   DATA.forEach((d,i)=>{d._id=i;d._bucket=bucketOf(d.genre);});
   // build markers once
@@ -650,6 +717,11 @@ fetch('data/restaurants.json?v=3',{cache:'no-cache'}).then(r=>r.json()).then(row
 }).catch(e=>{
   listEl.innerHTML='<div class="empty">データの読み込みに失敗しました。<br>'+esc(e.message)+'</div>';
 });
+
+// ---------- PWA: Service Worker 登録（オフライン対応・ホーム画面追加） ----------
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
 </script>
 </body>
 </html>

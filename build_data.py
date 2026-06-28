@@ -97,6 +97,28 @@ def open_days(hours, holiday):
     return [1 if i in open_set else 0 for i in range(7)]
 
 
+def open_ranges(hours):
+    """営業時間から「H:MM - H:MM」の時間帯を分(0-1440〜)で抽出する。
+
+    曜日ごとの差は区別せず全時間帯をまとめる（「今営業中」判定の参考用）。
+    終了が開始以下なら翌日にまたぐ営業として +1440 する。
+    """
+    out = []
+    for m in re.finditer(r"(\d{1,2}):(\d{2})\s*[-–~〜]\s*(\d{1,2}):(\d{2})", hours):
+        s = int(m.group(1)) * 60 + int(m.group(2))
+        e = int(m.group(3)) * 60 + int(m.group(4))
+        if e <= s:
+            e += 1440
+        out.append([s, e])
+    return out
+
+
+def walk_min(access):
+    """交通手段から最寄駅までの徒歩分を取り出す。取れなければ None。"""
+    m = re.search(r"徒歩(\d+)\s*分", access)
+    return int(m.group(1)) if m else None
+
+
 def main():
     with open(SRC, "rb") as fh:
         raw = fh.read()
@@ -143,6 +165,8 @@ def main():
             "hours": r["hours"],
             "holiday": r["holiday"],
             "openDays": open_days(r["hours"], r["holiday"]),
+            "openRanges": open_ranges(r["hours"]),
+            "walkMin": walk_min(r["access"]),
             "seats": r["seats"],
             "privateRoom": r["privateRoom"].startswith("有"),
             "smoking": r["smoking"],

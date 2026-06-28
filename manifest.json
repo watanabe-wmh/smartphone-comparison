@@ -1,0 +1,16 @@
+{
+  "name": "初台グルメマップ",
+  "short_name": "初台グルメ",
+  "description": "初台・渋谷・新宿・下北沢エリアの食べログ評価3.4以上1426店のグルメマップ",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f6f4",
+  "theme_color": "#d6452f",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
