@@ -25,6 +25,12 @@
     -webkit-text-size-adjust:100%;
   }
   #map{position:fixed;inset:0;z-index:1}
+  /* 「この範囲」で実際に検索される領域を示す枠（ヘッダーと既定シート位置の間） */
+  #rangeBox{position:fixed;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 54px);bottom:40vh;
+    border:2px dashed rgba(214,69,47,.5);border-radius:14px;z-index:850;pointer-events:none;display:none}
+  #rangeBox::after{content:'この範囲で検索中';position:absolute;top:-11px;left:12px;background:var(--accent);
+    color:#fff;font-size:.62rem;font-weight:700;padding:1px 8px;border-radius:8px}
+  #rangeBox.on{display:block}
   .leaflet-popup-content{margin:0;width:230px!important}
   .leaflet-popup-content-wrapper{border-radius:14px;overflow:hidden;padding:0}
   .leaflet-popup-content p{margin:0}
@@ -157,12 +163,14 @@
     .sheet.collapsed,.sheet.expanded{height:100vh!important}
     #locBtn{bottom:24px;right:412px}
     #shareBtn{bottom:80px;right:412px}
+    #rangeBox{display:none!important}   /* PCはシートが右パネルなので枠は不要 */
   }
 </style>
 </head>
 <body>
 
 <div id="map"></div>
+<div id="rangeBox" aria-hidden="true"></div>
 
 <header>
   <div class="bar">
@@ -352,9 +360,21 @@ function cardHtml(d){
     </div></div>`;
 }
 let boundsOnly=true, view=[];   // 既定で「この範囲」ON
-function inView(d){return map.getBounds().contains([d.lat,d.lng]);}
+// 「この範囲」= 画面で実際に見えている地図部分（ヘッダーとボトムシートの間）。
+// 縦画面では地図がフルスクリーンで縦長＆下部がシートに隠れるため、
+// 見えている矩形だけに範囲を補正する。PCではシートが右の固定パネルなので地図全体でよい。
+function visibleBounds(){
+  if(window.innerWidth>=640) return map.getBounds();
+  const size=map.getSize();
+  const topPad=54;            // ヘッダーが被る上部
+  const cutoff=size.y*0.60;   // 既定のシート位置(40vh)に合わせた下端。シート開閉では変えず安定させる
+  const nw=map.containerPointToLatLng([0,topPad]);
+  const se=map.containerPointToLatLng([size.x,cutoff]);
+  return L.latLngBounds(nw,se);
+}
 function renderList(){
-  view = boundsOnly ? filtered.filter(inView) : filtered;
+  const vb=boundsOnly?visibleBounds():null;
+  view = boundsOnly ? filtered.filter(d=>vb.contains([d.lat,d.lng])) : filtered;
   document.getElementById('num').textContent=view.length;
   const slice=view.slice(0,renderLimit);
   listEl.innerHTML = view.length
@@ -375,6 +395,7 @@ areaToggle.onclick=()=>{
   boundsOnly=!boundsOnly;
   areaToggle.classList.toggle('on',boundsOnly);
   areaToggle.setAttribute('aria-pressed',boundsOnly);
+  document.getElementById('rangeBox').classList.toggle('on',boundsOnly);
   refreshList(true);
   writeURL();
 };
@@ -439,7 +460,7 @@ function applyFilters(){
 function sortList(){
   const by=document.getElementById('sort').value;
   let cc=null;
-  if(by==='center'){ const c=map.getCenter(); cc=[c.lat,c.lng]; }
+  if(by==='center'){ const c=visibleBounds().getCenter(); cc=[c.lat,c.lng]; }
   filtered.sort((a,b)=>{
     if(by==='center'){
       return haversine(cc[0],cc[1],a.lat,a.lng)-haversine(cc[0],cc[1],b.lat,b.lng);
@@ -546,6 +567,7 @@ function readURL(){
   }
   const at=document.getElementById('areaToggle');
   at.classList.toggle('on',boundsOnly); at.setAttribute('aria-pressed',boundsOnly);
+  document.getElementById('rangeBox').classList.toggle('on',boundsOnly);
 }
 function toast(msg){
   const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
