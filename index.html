@@ -108,6 +108,7 @@
   .badge{font-size:.62rem;font-weight:700;padding:2px 6px;border-radius:6px;background:#f0efe9;color:#6b6b63}
   .badge.award{background:#fff4d6;color:#a8730a}
   .badge.gen{background:#fbe9e5;color:var(--accent-d)}
+  .badge.irregular{background:#fdeede;color:#bd5a07}
   .empty{text-align:center;color:var(--sub);padding:40px 20px;font-size:.85rem}
 
   /* ===== filter modal ===== */
@@ -320,6 +321,7 @@ function popupHtml(d){
         <span>${esc(d.genre)}</span>
         ${d.budgetNight?`<span>夜 ${esc(d.budgetNight)}</span>`:''}
         <span>${esc(d.station)}</span>
+        ${/不定休/.test(d.holiday||'')?'<span style="color:#bd5a07;font-weight:700">不定休・要確認</span>':''}
       </div>
       <div class="acts">
         ${tel}
@@ -345,6 +347,7 @@ function cardHtml(d){
   if(d.hyakumeiten)badges.push('<span class="badge award">百名店</span>');
   badges.push(`<span class="badge gen">${esc(d.genreTop)}</span>`);
   if(d.privateRoom)badges.push('<span class="badge">個室</span>');
+  if(/不定休/.test(d.holiday||''))badges.push('<span class="badge irregular">不定休・要確認</span>');
   const dist=userLatLng?` ・ ${haversine(userLatLng[0],userLatLng[1],d.lat,d.lng).toFixed(2)}km`:'';
   return `<div class="card" data-id="${d._id}">
     <img class="thumb" loading="lazy" src="${esc(d.photo)}" alt="">
