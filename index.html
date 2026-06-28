@@ -60,6 +60,11 @@
   #locBtn{bottom:calc(40vh + 14px + var(--safe-b))}
   #locBtn.active{background:var(--accent);border-color:var(--accent)}
   #locBtn.active svg{stroke:#fff}
+  #shareBtn{bottom:calc(40vh + 14px + 56px + var(--safe-b))}
+  .toast{position:fixed;left:50%;bottom:calc(44vh + var(--safe-b));transform:translateX(-50%);
+    background:rgba(0,0,0,.84);color:#fff;padding:10px 18px;border-radius:22px;font-size:.82rem;font-weight:600;
+    z-index:3000;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+  .toast.show{opacity:1}
 
   /* ===== bottom sheet ===== */
   .sheet{
@@ -151,6 +156,7 @@
     #map{right:400px}
     .sheet.collapsed,.sheet.expanded{height:100vh!important}
     #locBtn{bottom:24px;right:412px}
+    #shareBtn{bottom:80px;right:412px}
   }
 </style>
 </head>
@@ -169,9 +175,13 @@
   </div>
 </header>
 
+<button class="fab" id="shareBtn" aria-label="この条件を共有">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+</button>
 <button class="fab" id="locBtn" aria-label="現在地">
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg>
 </button>
+<div class="toast" id="toast"></div>
 
 <section class="sheet" id="sheet">
   <div class="grip" id="grip"><span></span></div>
@@ -261,6 +271,7 @@ function bucketOf(g){
   for(const [name,re] of GENRE_BUCKETS) if(re.test(g)) return name;
   return 'その他';
 }
+const BUCKET_NAMES=[...GENRE_BUCKETS.map(g=>g[0]),'その他'];  // URL共有でジャンルをindex化
 // ディナー予算の選択肢（円）。下限/上限プルダウンで共用
 const BUDGET_STEPS=[1000,2000,3000,4000,5000,6000,8000,10000,15000,20000,30000];
 const RATINGS=[['すべて',0],['★4.0+',4.0],['★3.8+',3.8],['★3.6+',3.6]];
@@ -365,11 +376,13 @@ areaToggle.onclick=()=>{
   areaToggle.classList.toggle('on',boundsOnly);
   areaToggle.setAttribute('aria-pressed',boundsOnly);
   refreshList(true);
+  writeURL();
 };
 map.on('moveend',()=>{
   const by=document.getElementById('sort').value;
   if(by==='center') sortList();            // 中央が動いたら距離順を取り直す
   if(boundsOnly || by==='center') refreshList(true);
+  writeURL();                              // 地図位置もURLに反映
 });
 listEl.addEventListener('click',e=>{
   const c=e.target.closest('.card'); if(!c)return;
@@ -421,6 +434,7 @@ function applyFilters(){
   const active=F.genre.size+F.days.size+(F.station?1:0)+((F.bmin!=null||F.bmax!=null)?1:0)+(F.rating?1:0)+F.toggles.size;
   fc.hidden=!active; fc.textContent=active;
   refreshList(true);
+  writeURL();
 }
 function sortList(){
   const by=document.getElementById('sort').value;
@@ -438,7 +452,7 @@ function sortList(){
     return (b.rating||0)-(a.rating||0)||b.reviews-a.reviews;
   });
 }
-document.getElementById('sort').addEventListener('change',()=>{sortList();refreshList(true);});
+document.getElementById('sort').addEventListener('change',()=>{sortList();refreshList(true);writeURL();});
 
 // ---------- search ----------
 let qt; document.getElementById('q').addEventListener('input',e=>{
@@ -460,7 +474,7 @@ function buildFilterUI(){
   const order=[...GENRE_BUCKETS.map(g=>g[0]),'その他'].filter(g=>cnt[g]);
   const gc=document.getElementById('genreChips');
   order.forEach(g=>{
-    const b=chip(`${g}`,false,()=>{F.genre.has(g)?F.genre.delete(g):F.genre.add(g);b.classList.toggle('on');});
+    const b=chip(`${g}`,F.genre.has(g),()=>{F.genre.has(g)?F.genre.delete(g):F.genre.add(g);b.classList.toggle('on');});
     gc.appendChild(b);
   });
   // stations
@@ -469,11 +483,12 @@ function buildFilterUI(){
   Object.keys(stc).sort((a,b)=>stc[b]-stc[a]).forEach(s=>{
     const o=document.createElement('option');o.value=s;o.textContent=`${s}（${stc[s]}）`;ss.appendChild(o);
   });
+  ss.value=F.station;
   ss.onchange=e=>F.station=e.target.value;
   // 営業曜日（複数選択＝選んだ曜日すべてに営業している店）
   const dc=document.getElementById('dayChips');
   DAYNAMES.forEach((nm,i)=>{
-    const b=chip(nm,false,()=>{F.days.has(i)?F.days.delete(i):F.days.add(i);b.classList.toggle('on');});
+    const b=chip(nm,F.days.has(i),()=>{F.days.has(i)?F.days.delete(i):F.days.add(i);b.classList.toggle('on');});
     dc.appendChild(b);
   });
   // ディナー予算（下限〜上限）
@@ -483,15 +498,68 @@ function buildFilterUI(){
   BUDGET_STEPS.forEach(v=>minSel.appendChild(new Option(yen(v)+'〜',v)));
   maxSel.appendChild(new Option('上限なし',''));
   BUDGET_STEPS.forEach(v=>maxSel.appendChild(new Option('〜'+yen(v),v)));
+  minSel.value=F.bmin!=null?F.bmin:'';
+  maxSel.value=F.bmax!=null?F.bmax:'';
   minSel.onchange=e=>{F.bmin=e.target.value?+e.target.value:null;};
   maxSel.onchange=e=>{F.bmax=e.target.value?+e.target.value:null;};
   // rating
   const rc=document.getElementById('ratingChips');
-  RATINGS.forEach(([l,v])=>{const b=chip(l,v===0,()=>{F.rating=v;rc.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));b.classList.add('on');});rc.appendChild(b);});
+  RATINGS.forEach(([l,v])=>{const b=chip(l,v===F.rating,()=>{F.rating=v;rc.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));b.classList.add('on');});rc.appendChild(b);});
   // toggles
   const tc=document.getElementById('toggleChips');
-  TOGGLES.forEach(([k,l])=>{const b=chip(l,false,()=>{F.toggles.has(k)?F.toggles.delete(k):F.toggles.add(k);b.classList.toggle('on');});tc.appendChild(b);});
+  TOGGLES.forEach(([k,l])=>{const b=chip(l,F.toggles.has(k),()=>{F.toggles.has(k)?F.toggles.delete(k):F.toggles.add(k);b.classList.toggle('on');});tc.appendChild(b);});
 }
+// ---------- URL共有（条件＋地図位置をURLに保存／復元） ----------
+let urlReady=false;  // 初期化完了までURL書き込みを抑止
+function writeURL(){
+  if(!urlReady)return;
+  const u=new URLSearchParams();
+  if(F.genre.size) u.set('g',[...F.genre].map(n=>BUCKET_NAMES.indexOf(n)).join(','));
+  if(F.days.size) u.set('d',[...F.days].sort((a,b)=>a-b).join(','));
+  if(F.station) u.set('st',F.station);
+  if(F.bmin!=null) u.set('bmin',F.bmin);
+  if(F.bmax!=null) u.set('bmax',F.bmax);
+  if(F.rating) u.set('r',F.rating);
+  if(F.toggles.size) u.set('t',[...F.toggles].join(','));
+  if(F.q&&F.q.trim()) u.set('q',F.q.trim());
+  const s=document.getElementById('sort').value; if(s!=='center') u.set('s',s);
+  if(!boundsOnly) u.set('a','0');
+  const c=map.getCenter(); u.set('ll',c.lat.toFixed(5)+','+c.lng.toFixed(5)); u.set('z',map.getZoom());
+  history.replaceState(null,'','?'+u.toString());
+}
+let pendingView=null;
+function readURL(){
+  const u=new URLSearchParams(location.search);
+  if(u.has('g')) u.get('g').split(',').forEach(i=>{const n=BUCKET_NAMES[+i]; if(n)F.genre.add(n);});
+  if(u.has('d')) u.get('d').split(',').forEach(i=>{const v=+i; if(v>=0&&v<=6)F.days.add(v);});
+  if(u.has('st')) F.station=u.get('st');
+  if(u.has('bmin')) F.bmin=+u.get('bmin')||null;
+  if(u.has('bmax')) F.bmax=+u.get('bmax')||null;
+  if(u.has('r')) F.rating=+u.get('r')||0;
+  if(u.has('t')) u.get('t').split(',').forEach(k=>{if(k)F.toggles.add(k);});
+  if(u.has('q')){ F.q=u.get('q'); document.getElementById('q').value=F.q; }
+  if(u.has('s')) document.getElementById('sort').value=u.get('s');
+  if(u.has('a')) boundsOnly=u.get('a')!=='0';
+  if(u.has('ll')&&u.has('z')){
+    const [la,ln]=u.get('ll').split(',').map(Number), z=+u.get('z');
+    if(isFinite(la)&&isFinite(ln)&&isFinite(z)) pendingView=[[la,ln],z];
+  }
+  const at=document.getElementById('areaToggle');
+  at.classList.toggle('on',boundsOnly); at.setAttribute('aria-pressed',boundsOnly);
+}
+function toast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),1800);
+}
+async function shareCurrent(){
+  writeURL();
+  const url=location.href;
+  try{ if(navigator.share){ await navigator.share({title:'初台グルメマップ',text:'初台・渋谷・新宿のグルメマップ',url}); return; } }
+  catch(e){ if(e&&e.name==='AbortError')return; }
+  try{ await navigator.clipboard.writeText(url); toast('URLをコピーしました'); }
+  catch(e){ window.prompt('このURLをコピーして共有してください', url); }
+}
+document.getElementById('shareBtn').onclick=shareCurrent;
 document.getElementById('resetF').onclick=()=>{
   F.genre.clear();F.days.clear();F.station='';F.bmin=null;F.bmax=null;F.rating=0;F.toggles.clear();
   document.querySelectorAll('#filter .chip').forEach(c=>c.classList.remove('on'));
@@ -531,7 +599,7 @@ document.getElementById('locBtn').onclick=()=>{
     else userMarker=L.circleMarker(userLatLng,{radius:8,color:'#fff',weight:3,fillColor:'#3a78d6',fillOpacity:1}).addTo(map);
     map.setView(userLatLng,15);
     document.getElementById('sort').value='dist';
-    sortList();refreshList(true);
+    sortList();refreshList(true);writeURL();
   },err=>{
     btn.classList.remove('active');
     alert('現在地を取得できませんでした。位置情報の許可をご確認ください。');
@@ -549,7 +617,10 @@ fetch('data/restaurants.json?v=2',{cache:'no-cache'}).then(r=>r.json()).then(row
     m.bindPopup(()=>popupHtml(d),{maxWidth:240,minWidth:230});
     markerById.set(d._id,m);
   });
-  buildFilterUI();
+  readURL();                                   // URLから条件・地図位置を復元
+  if(pendingView) map.setView(pendingView[0],pendingView[1]);
+  buildFilterUI();                             // 復元したFをUIに反映
+  urlReady=true;                               // 以降のwriteURLを許可
   applyFilters();
 }).catch(e=>{
   listEl.innerHTML='<div class="empty">データの読み込みに失敗しました。<br>'+esc(e.message)+'</div>';
