@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#d6452f">
-<title>初台グルメマップ｜渋谷・新宿の食べログ上位1200店</title>
-<meta name="description" content="初台・渋谷・新宿エリアの食べログ評価上位1200店をスマホで探せるグルメマップ。ジャンル・予算・評価・現在地から絞り込み。">
+<title>初台グルメマップ｜渋谷・新宿・下北沢の食べログ評価3.4以上1426店</title>
+<meta name="description" content="初台・渋谷・新宿・下北沢エリアの食べログ評価3.4以上の1426店をスマホで探せるグルメマップ。ジャンル・予算・評価・営業曜日・現在地から絞り込み。">
 
 <link rel="stylesheet" href="vendor/leaflet.css">
 <link rel="stylesheet" href="vendor/MarkerCluster.css">
@@ -175,7 +175,7 @@
 
 <header>
   <div class="bar">
-    <div class="logo">初台グルメ<small>食べログ上位1200店</small></div>
+    <div class="logo">初台グルメ<small>食べログ評価3.4+ 1426店</small></div>
     <div class="search">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
       <input id="q" type="search" placeholder="店名・ジャンルで検索" enterkeyhint="search">
@@ -633,7 +633,7 @@ document.getElementById('locBtn').onclick=()=>{
 
 // ---------- init ----------
 // ?v= はデータ更新時のキャッシュ回避用。openDays等の項目追加時はバージョンを上げる
-fetch('data/restaurants.json?v=2',{cache:'no-cache'}).then(r=>r.json()).then(rows=>{
+fetch('data/restaurants.json?v=3',{cache:'no-cache'}).then(r=>r.json()).then(rows=>{
   DATA=rows;
   DATA.forEach((d,i)=>{d._id=i;d._bucket=bucketOf(d.genre);});
   // build markers once
