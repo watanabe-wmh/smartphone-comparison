@@ -337,7 +337,9 @@ function isOpenNow(d,today,nm){
 }
 
 // ---------- map ----------
-const map=L.map('map',{zoomControl:false,attributionControl:true}).setView(CENTER,ZOOM);
+// zoomSnap:0 で整数段スナップを解除＝ピンチが無段階に。ボタン/ダブルタップは0.5刻み
+const map=L.map('map',{zoomControl:false,attributionControl:true,
+  zoomSnap:0,zoomDelta:0.5,wheelPxPerZoomLevel:120}).setView(CENTER,ZOOM);
 L.control.zoom({position:'bottomright'}).addTo(map);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
   maxZoom:19,attribution:'&copy; OpenStreetMap'
