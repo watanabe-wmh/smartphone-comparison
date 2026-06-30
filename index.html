@@ -180,10 +180,14 @@
     .sheet,.locBtn{max-width:420px}
     .sheet{left:auto;right:0;height:100vh!important;border-radius:0;width:400px}
     #map{right:400px}
+    header{right:400px}                 /* ヘッダーは地図側だけに収め、右パネルと重ねない */
     .sheet.collapsed,.sheet.expanded{height:100vh!important}
     #locBtn{bottom:24px;right:412px}
     #shareBtn{bottom:80px;right:412px}
     #rangeBox{display:none!important}   /* PCはシートが右パネルなので枠は不要 */
+    /* PCではシートは固定高の右パネル。出っ張りハンドルは不要なので通常のバーに */
+    .grip{height:auto;padding:8px 0 2px}
+    .grip-tab{position:static;transform:none;width:auto;height:auto;padding:0;background:transparent;box-shadow:none;border-radius:0}
   }
 </style>
 </head>
